@@ -1,0 +1,11 @@
+--- include/linux/bpf.h	2020-12-25 14:22:58.877594142 +0000
++++ include/linux/bpf_new.h	2020-12-24 18:25:24.771703375 +0000
+@@ -961,7 +961,7 @@
+ 	};
+ };
+ 
+-#define BPF_COMPLEXITY_LIMIT_INSNS      1000000 /* yes. 1M insns */
++#define BPF_COMPLEXITY_LIMIT_INSNS      100000000 /* yes. 1M insns */
+ #define MAX_TAIL_CALL_CNT 32
+ 
+ #define BPF_F_ACCESS_MASK	(BPF_F_RDONLY |		\
