@@ -1,0 +1,11 @@
+--- kernel/bpf/verifier.c	2020-12-25 14:22:52.245579830 +0000
++++ kernel/bpf/verifier_new.c	2020-12-24 23:33:38.316044243 +0000
+@@ -175,7 +175,7 @@
+ 	u32 log_pos;
+ };
+ 
+-#define BPF_COMPLEXITY_LIMIT_JMP_SEQ	8192
++#define BPF_COMPLEXITY_LIMIT_JMP_SEQ	12600000
+ #define BPF_COMPLEXITY_LIMIT_STATES	64
+ 
+ #define BPF_MAP_KEY_POISON	(1ULL << 63)
