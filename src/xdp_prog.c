@@ -150,8 +150,6 @@ int xdp_prog_main(struct xdp_md *ctx)
         {
 
         }
-
-        return XDP_PASS;
     }
     else
     {
@@ -176,8 +174,6 @@ int xdp_prog_main(struct xdp_md *ctx)
         {
             // Now deal with packets coming back.
         }
-
-        return XDP_PASS;
     }
 
     return XDP_PASS;
