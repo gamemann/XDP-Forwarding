@@ -172,21 +172,23 @@ int xdp_prog_main(struct xdp_md *ctx)
 
         if (fwdinfo)
         {
+            struct port_key portkey = {0};
+            portkey.bindaddr = iph->saddr;
+
             // Find out what the client IP is.
             struct connection *conn = NULL;
-            uint16_t sport = 0;
 
             if (tcph)
             {
-                sport = htons(tcph->dest);
+                portkey.port = htons(tcph->dest);
 
-                conn = bpf_map_lookup_elem(&tcp_map, &sport);
+                conn = bpf_map_lookup_elem(&tcp_map, &portkey);
             }
             else if (udph)
             {
-                sport = htons(udph->dest);
+                portkey.port = htons(udph->dest);
 
-                conn = bpf_map_lookup_elem(&udp_map, &sport);
+                conn = bpf_map_lookup_elem(&udp_map, &portkey);
             }
 
             if (conn)
