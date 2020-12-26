@@ -92,7 +92,7 @@ int xdp_prog_main(struct xdp_md *ctx)
     struct udphdr *udph = NULL;
     struct tcphdr *tcph = NULL;
 
-    uint16_t destport = 0;
+    uint16_t portkey = 0;
 
     switch (iph->protocol)
     {
@@ -119,11 +119,11 @@ int xdp_prog_main(struct xdp_md *ctx)
 
     if (udph)
     {
-        destport = htons(udph->dest);
+        portkey = htons(udph->dest);
     }
     else if (tcph)
     {
-        destport = htons(tcph->dest);
+        portkey = htons(tcph->dest);
     }
 
     // Construct forward key.
@@ -131,14 +131,14 @@ int xdp_prog_main(struct xdp_md *ctx)
     
     fwdkey.bindaddr = iph->saddr;
     fwdkey.protocol = iph->protocol;
-    fwdkey.bindport = destport;
+    fwdkey.bindport = portkey;
     
     struct forward_info *fwdinfo = bpf_map_lookup_elem(&forward_map, &fwdkey);
 
     if (fwdinfo)
     {
         // Check if we have an existing connection for this address.
-        struct conn_key connkey;
+        struct conn_key connkey = {0};
 
         connkey.clientaddr = iph->saddr;
         connkey.bindaddr = iph->daddr;
@@ -148,7 +148,33 @@ int xdp_prog_main(struct xdp_md *ctx)
 
         if (conn)
         {
-            
+
+        }
+
+        return XDP_PASS;
+    }
+    else
+    {
+        // Look for packets coming back from bind addresses.
+        fwdkey.bindaddr = iph->saddr;
+        fwdkey.protocol = iph->protocol;
+
+        if (udph)
+        {
+            portkey = htons(udph->source);
+        }
+        else if (tcph)
+        {
+            portkey = htons(tcph->source);
+        }
+
+        fwdkey.bindport = portkey;
+
+        fwdinfo = bpf_map_lookup_elem(&forward_map, &fwdkey);
+
+        if (fwdinfo)
+        {
+            // Now deal with packets coming back.
         }
 
         return XDP_PASS;
