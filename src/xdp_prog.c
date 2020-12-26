@@ -172,7 +172,27 @@ int xdp_prog_main(struct xdp_md *ctx)
 
         if (fwdinfo)
         {
-            // Now deal with packets coming back.
+            // Find out what the client IP is.
+            struct connection *conn = NULL;
+            uint16_t sport = 0;
+
+            if (tcph)
+            {
+                sport = htons(tcph->dest);
+
+                conn = bpf_map_lookup_elem(&tcp_map, &sport);
+            }
+            else if (udph)
+            {
+                sport = htons(udph->dest);
+
+                conn = bpf_map_lookup_elem(&udp_map, &sport);
+            }
+
+            if (conn)
+            {
+                // Now forward packet back to actual client.
+            }
         }
     }
 
