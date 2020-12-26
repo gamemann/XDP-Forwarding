@@ -129,7 +129,7 @@ int xdp_prog_main(struct xdp_md *ctx)
     // Construct forward key.
     struct forward_key fwdkey = {0};
     
-    fwdkey.bindaddr = iph->saddr;
+    fwdkey.bindaddr = iph->daddr;
     fwdkey.protocol = iph->protocol;
     fwdkey.bindport = portkey;
     
