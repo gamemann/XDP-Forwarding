@@ -2,13 +2,14 @@
 
 #include <inttypes.h>
 
+#define MAXRULES 256
+#define MAXPORTS 65535
+#define MAXCONNECTIONS 1000000
+
 struct connection
 {
-    uint16_t tcpport;
-    uint64_t tcplastseen;
-
-    uint16_t udpport;
-    uint64_t udplastseen;
+    uint16_t port;
+    uint64_t lastseen;
 
     uint64_t count;
 };
@@ -16,17 +17,27 @@ struct connection
 struct forward_key
 {
     uint32_t bindaddr;
-    uint16_t bindport;
-
     uint8_t protocol;
 
-    uint32_t destaddr;
-    uint16_t destport;
+    uint16_t bindport;
 };
 
 struct forward_info
 {
-    uint32_t tcpmap;
-    uint32_t udpmap;
-    uint32_t connmap;
+    uint32_t destaddr;
+    uint16_t destport;
 };
+
+struct port_key
+{
+    uint32_t bindaddr;
+    uint16_t port;
+};
+
+struct conn_key
+{
+    uint32_t clientaddr;
+    uint32_t bindaddr;
+    uint8_t protocol;
+};
+
