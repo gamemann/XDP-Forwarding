@@ -16,3 +16,5 @@
 #endif
 
 #define NULL ((void*)0)
+
+#define FORWARD_MAP "/sys/fs/bpf/xdpfwd/forward_map"

@@ -11,9 +11,13 @@ LIBBPFOBJS += $(LIBBPFSRC)/staticobjs/xsk.o
 LOADEROBJS += src/xdpfwd.o
 LOADERFLAGS += -lelf -lz
 
-all: loader xdp_prog
+ADDOBJS += src/xdpfwd-add.o
+
+all: loader xdp_add xdp_prog
 loader: libbpf $(LOADEROBJS)
-	clang $(LOADERFLAGS) -O1 -o xdpfwd $(LIBBPFOBJS) $(LOADEROBJS)
+	clang -I$(LIBBPFSRC) $(LOADERFLAGS) -O1 -o xdpfwd $(LIBBPFOBJS) $(LOADEROBJS)
+xdp_add: libbpf
+	clang -I$(LIBBPFSRC) $(LOADERFLAGS) -o xdpfwd-add $(LIBBPFOBJS) src/xdpfwd-add.c
 xdp_prog:
 	clang -I$(LIBBPFSRC) -D__BPF__ -Wall -Wextra -O2 -emit-llvm -c src/xdp_prog.c -o src/xdp_prog.bc
 	llc -march=bpf -filetype=obj src/xdp_prog.bc -o src/xdp_prog.o
