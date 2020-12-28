@@ -1,5 +1,3 @@
-CC = clang
-
 LIBBPFSRC = libbpf/src
 
 LIBBPFOBJS += $(LIBBPFSRC)/staticobjs/bpf_prog_linfo.o $(LIBBPFSRC)/staticobjs/bpf.o $(LIBBPFSRC)/staticobjs/btf_dump.o
