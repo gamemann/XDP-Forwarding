@@ -15,9 +15,9 @@ ADDSRC += src/xdpfwd-add.c
 
 all: loader xdp_add xdp_prog
 loader: libbpf $(LOADEROBJS)
-	clang -I$(LIBBPFSRC) $(LOADERFLAGS) -O1 -o xdpfwd $(LIBBPFOBJS) $(LOADEROBJS) $(LOADERSRC)
+	clang -I$(LIBBPFSRC) $(LOADERFLAGS) -O3 -o xdpfwd $(LIBBPFOBJS) $(LOADEROBJS) $(LOADERSRC)
 xdp_add: libbpf $(ADDOBJS)
-	clang -I$(LIBBPFSRC) $(LOADERFLAGS) -O1 -o xdpfwd-add $(LIBBPFOBJS) $(ADDOBJS) $(ADDSRC)
+	clang -I$(LIBBPFSRC) $(LOADERFLAGS) -O3 -o xdpfwd-add $(LIBBPFOBJS) $(ADDOBJS) $(ADDSRC)
 xdp_prog:
 	clang -I$(LIBBPFSRC) -D__BPF__ -Wall -Wextra -O2 -emit-llvm -c src/xdp_prog.c -o src/xdp_prog.bc
 	llc -march=bpf -filetype=obj src/xdp_prog.bc -o src/xdp_prog.o
