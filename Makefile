@@ -13,12 +13,12 @@ LOADERSRC += src/xdpfwd.c
 LOADERFLAGS += -lelf -lz
 
 ADDOBJS += src/config.o src/cmdline.o
-ADDSRC += src/xdpfwd.add-c
+ADDSRC += src/xdpfwd-add.c
 
 all: loader xdp_add xdp_prog
 loader: libbpf $(LOADEROBJS)
 	clang -I$(LIBBPFSRC) $(LOADERFLAGS) -O1 -o xdpfwd $(LIBBPFOBJS) $(LOADEROBJS) $(LOADERSRC)
-xdp_add: libbpf
+xdp_add: libbpf $(ADDOBJS)
 	clang -I$(LIBBPFSRC) $(LOADERFLAGS) -O1 -o xdpfwd-add $(LIBBPFOBJS) $(ADDOBJS) $(ADDSRC)
 xdp_prog:
 	clang -I$(LIBBPFSRC) -D__BPF__ -Wall -Wextra -O2 -emit-llvm -c src/xdp_prog.c -o src/xdp_prog.bc
