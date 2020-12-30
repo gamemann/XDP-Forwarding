@@ -1,6 +1,7 @@
 #include <libconfig.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <string.h>
 
 #include "config.h"
 
@@ -42,7 +43,7 @@ int parseconfig(const char *file, struct config *cfg)
         return EXIT_FAILURE;
     }
 
-    cfg->interface = interface;
+    cfg->interface = strdup(interface);
 
     // Read forwarding rules.
     config_setting_t *fwd;
@@ -71,7 +72,7 @@ int parseconfig(const char *file, struct config *cfg)
             continue;
         }
 
-        cfg->rules[i].bindaddr = bindip;
+        cfg->rules[i].bindaddr = strdup(bindip);
 
         const char *destip;
 
@@ -84,7 +85,7 @@ int parseconfig(const char *file, struct config *cfg)
             continue;
         }
 
-        cfg->rules[i].destaddr = destip;
+        cfg->rules[i].destaddr = strdup(destip);
         
         int bindport;
 
