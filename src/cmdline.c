@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <getopt.h>
 
@@ -8,6 +9,13 @@ const struct option lopts[] =
 {
     {"config", required_argument, NULL, 'c'},
     {"offload", no_argument, NULL, 'o'},
+
+    {"baddr", required_argument, NULL, 'b'},
+    {"bport", required_argument, NULL, 'B'},
+    {"daddr", required_argument, NULL,  'd'},
+    {"dport", required_argument, NULL, 'D'},
+    {"protocol", required_argument, NULL, 'p'},
+
     {"help", no_argument, NULL, 'h'},
     {NULL, 0, NULL, 0}
 };
@@ -34,6 +42,31 @@ void parsecmdline(int argc, char *argv[], struct cmdline *cmd)
 
                 case 'h':
                     cmd->help = 1;
+
+                    break;
+
+                case 'b':
+                    cmd->baddr = optarg;
+
+                    break;
+                
+                case 'B':
+                    cmd->bport = (uint16_t)atoi(optarg);
+
+                    break;
+
+                case 'd':
+                    cmd->daddr = optarg;
+
+                    break;
+
+                case 'D':
+                    cmd->dport = (uint16_t)atoi(optarg);
+
+                    break;
+
+                case 'p':
+                    cmd->protocol = (uint8_t)atoi(optarg);
 
                     break;
 
