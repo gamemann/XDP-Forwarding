@@ -5,7 +5,7 @@
 
 #include <bpf.h>
 
-#include "xdp_prog.h"
+#include "xdpfwd.h"
 
 int bpf_map_get(const char *path)
 {

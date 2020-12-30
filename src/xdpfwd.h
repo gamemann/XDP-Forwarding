@@ -42,3 +42,4 @@ struct conn_key
     uint8_t protocol;
 };
 
+#define FORWARD_MAP "/sys/fs/bpf/xdpfwd/forward_map"
