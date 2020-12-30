@@ -5,6 +5,8 @@
 #include <sys/resource.h>
 #include <getopt.h>
 #include <inttypes.h>
+#include <signal.h>
+#include <unistd.h>
 
 #include <bpf.h>
 #include <libbpf.h>
@@ -15,6 +17,13 @@
 #include "xdpfwd.h"
 #include "config.h"
 #include "cmdline.h"
+
+uint8_t cont = 1;
+
+void signhdl(int tmp)
+{
+    cont = 0;
+}
 
 int raise_rlimit()
 {
@@ -51,7 +60,7 @@ int attachxdp(int ifidx, int progfd, struct cmdline *cmd)
 
         err = bpf_set_link_xdp_fd(ifidx, progfd, flags);
 
-        if (err)
+        if (err || progfd == -1)
         {
             const char *smode;
 
@@ -81,12 +90,19 @@ int attachxdp(int ifidx, int progfd, struct cmdline *cmd)
                     break;
             }
 
-            fprintf(stderr, "Could not attach with %s mode.\n", smode);
+            if (progfd != -1)
+            {
+                fprintf(stderr, "Could not attach with %s mode (%s)(%d).\n", smode, strerror(-err), err);
+            }
             
             if (mode != -err)
             {
                 flags |= mode;
             }
+        }
+        else
+        {
+            break;
         }
     }
 
@@ -128,7 +144,7 @@ int main(int argc, char *argv[])
     // Retrieve interface index.
     int ifidx = if_nametoindex(cfg.interface);
 
-    if (ifidx < 0)
+    if (ifidx < 1)
     {
         fprintf(stderr, "Error retrieving interface index. Interface => %s\n", cfg.interface);
 
@@ -136,22 +152,14 @@ int main(int argc, char *argv[])
     }
 
     // Load XDP/BPF map.
-    int progfd;
+    int progfd = -1;
     const char *bpfprog = "/etc/xdpfwd/xdp_prog.o";
 
     struct bpf_object *obj;
 
     int err = 0;
 
-    struct bpf_prog_load_attr loadattr =
-    {
-        .prog_type = BPF_PROG_TYPE_XDP,
-        .ifindex = ifidx
-    };
-
-    loadattr.file = bpfprog;
-
-    if ((err = bpf_prog_load_xattr(&loadattr, &obj, &progfd)))
+    if ((err = bpf_prog_load(bpfprog, BPF_PROG_TYPE_XDP, &obj, &progfd)))
     {
         fprintf(stderr, "Error loading XDP program. File => %s. Error => %s. Error Number -> %d\n", bpfprog, strerror(-err), err);
 
@@ -166,12 +174,25 @@ int main(int argc, char *argv[])
 
         return EXIT_FAILURE;
     }
-    
+
+    // Pin maps.
+    bpf_object__pin_maps(obj, PIN_DIR);
+
+    signal(SIGINT, signhdl);
+
     // Update forwarding map.
     for (int i = 0; i < rcount; i++)
     {
         
     }
+
+    while (cont)
+    {
+        sleep(1);
+    }
+
+    // Detach XDP program.
+    attachxdp(ifidx, -1, &cmd);
 
     return EXIT_SUCCESS;
 }
