@@ -180,10 +180,64 @@ int main(int argc, char *argv[])
 
     signal(SIGINT, signhdl);
 
-    // Update forwarding map.
-    for (int i = 0; i < rcount; i++)
+    // Get forward_map FD.
+    int forwardfd = bpf_object__find_map_fd_by_name(obj, "forward_map");
+
+    if (forwardfd < 0)
     {
-        
+        fprintf(stderr, "WARNING - Failed retrieving 'forward_map' FD.\n");
+    }
+    else
+    {
+        // Update forwarding map.
+        for (int i = 0; i < rcount; i++)
+        {
+            uint32_t bindaddr;
+            uint32_t destaddr;
+            uint8_t protocol;
+
+            // Fill out information.
+            struct in_addr baddr;
+            inet_pton(AF_INET, cfg.rules[i].bindaddr, &baddr);
+            bindaddr = baddr.s_addr;
+
+            struct in_addr daddr;
+            inet_pton(AF_INET, cfg.rules[i].destaddr, &daddr);
+            destaddr = daddr.s_addr;
+
+            if (cfg.rules[i].protocol != NULL)
+            {
+                if (strcmp(cfg.rules[i].protocol, "tcp") == 0)
+                {
+                    protocol = IPPROTO_TCP;
+                }
+                else if (strcmp(cfg.rules[i].protocol, "udp") == 0)
+                {
+                    protocol = IPPROTO_UDP;
+                }
+                else
+                {
+                    protocol = IPPROTO_ICMP; 
+                }
+            }
+
+            struct forward_key fwdkey = {0};
+
+            fwdkey.bindaddr = bindaddr;
+            fwdkey.bindport = cfg.rules[i].bindport;
+            fwdkey.protocol = protocol;
+
+            struct forward_info fwdinfo = {0};
+            fwdinfo.destaddr = destaddr;
+            fwdinfo.destport = cfg.rules[i].destport;
+
+            //fprintf(stdout, "Adding forwarding rule with %" PRIu32 ":%" PRIu16 " => %" PRIu32 ":%" PRIu16 " (%" PRIu8 ")\n", fwdkey.bindaddr, fwdkey.bindport, fwdinfo.destaddr, fwdinfo.destport, fwdkey.protocol);
+
+            if (bpf_map_update_elem(forwardfd, &fwdkey, &fwdinfo, BPF_ANY) != 0)
+            {
+                fprintf(stderr, "Failed adding forward rule %d :: %s.\n", i, strerror(errno));
+            }
+        }
     }
 
     while (cont)
