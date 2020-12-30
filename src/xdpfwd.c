@@ -191,6 +191,9 @@ int main(int argc, char *argv[])
         sleep(1);
     }
 
+    // Unpin maps.
+    bpf_object__unpin_maps(obj, PIN_DIR);
+
     // Detach XDP program.
     attachxdp(ifidx, -1, &cmd);
 
