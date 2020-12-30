@@ -8,7 +8,7 @@ LIBBPFOBJS += $(LIBBPFSRC)/staticobjs/xsk.o
 
 LOADEROBJS += src/config.o src/cmdline.o 
 LOADERSRC += src/xdpfwd.c
-LOADERFLAGS += -lelf -lz
+LOADERFLAGS += -lelf -lz -lconfig
 
 ADDOBJS += src/config.o src/cmdline.o
 ADDSRC += src/xdpfwd-add.c
@@ -27,5 +27,8 @@ clean:
 	$(MAKE) -C $(LIBBPFSRC) clean
 	rm -f src/*.o src/*.bc
 	rm -f xdpfwd
+install:
+	mkdir -p /etc/xdpfwd
+	cp src/xdp_prog.o /etc/xdpfwd/xdp_prog.o
 .PHONY: libbpf all
 .DEFAULT: all
