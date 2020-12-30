@@ -8,15 +8,7 @@
 
 #include "xdpfwd.h"
 #include "cmdline.h"
-
-int bpf_map_get(const char *path)
-{
-    int fd = -1;
-
-    fd = bpf_obj_get(path);
-
-    return fd;
-}
+#include "utils.h"
 
 int main(int argc, char *argv[])
 {
