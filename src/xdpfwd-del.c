@@ -54,7 +54,7 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
-    fprintf(stdout, "Deleted forwarding rule %s:%d over protocol %d\n", cmd.baddr, fwdkey.bindport, fwdkey.protocol);
+    fprintf(stdout, "Deleted forwarding rule %s:%d over protocol %d\n", cmd.baddr, cmd.bport, cmd.protocol);
 
     return EXIT_SUCCESS;
 }

@@ -77,7 +77,7 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
-    fprintf(stdout, "Added forwarding rule %s:%d => %s:%d over protocol %d\n", cmd.baddr, fwdkey.bindport, cmd.daddr, fwdinfo.destport, fwdkey.protocol);
+    fprintf(stdout, "Added forwarding rule %s:%d => %s:%d over protocol %d\n", cmd.baddr, cmd.bport, cmd.daddr, cmd.dport, cmd.protocol);
 
     return EXIT_SUCCESS;
 }
