@@ -194,7 +194,7 @@ int main(int argc, char *argv[])
         {
             uint32_t bindaddr;
             uint32_t destaddr;
-            uint8_t protocol;
+            uint8_t protocol = 0;
 
             // Fill out information.
             struct in_addr baddr;
