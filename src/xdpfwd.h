@@ -43,3 +43,4 @@ struct conn_key
 };
 
 #define FORWARD_MAP "/sys/fs/bpf/xdpfwd/forward_map"
+#define PIN_DIR "/sys/fs/bpf/xdpfwd"
