@@ -11,6 +11,8 @@ struct forward_rule
 
     const char *destaddr;
     uint16_t destport;
+
+    const char *protocol;
 };
 
 extern int rcount;

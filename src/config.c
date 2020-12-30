@@ -105,6 +105,15 @@ int parseconfig(const char *file, struct config *cfg)
 
         cfg->rules[i].destport = (uint16_t) destport;
 
+        const char *protocol = NULL;
+
+        config_setting_lookup_string(rule, "protocol", &protocol);
+
+        if (protocol != NULL)
+        {
+            cfg->rules[i].protocol = strdup(protocol);
+        }
+
         rcount++;
     }
 
