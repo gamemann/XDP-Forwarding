@@ -27,6 +27,7 @@ clean:
 	$(MAKE) -C $(LIBBPFSRC) clean
 	rm -f src/*.o src/*.bc
 	rm -f xdpfwd
+	rm -f xdpfwd-add
 install:
 	mkdir -p /etc/xdpfwd
 	cp src/xdp_prog.o /etc/xdpfwd/xdp_prog.o
