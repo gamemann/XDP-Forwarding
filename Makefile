@@ -41,5 +41,8 @@ clean:
 install:
 	mkdir -p /etc/xdpfwd
 	cp src/xdp_prog.o /etc/xdpfwd/xdp_prog.o
+	cp xdpfwd /usr/bin/xdpfwd
+	cp xdpfwd-add /usr/bin/xdpfwd-add
+	cp xdpfwd-del /usr/bin/xdpfwd-del
 .PHONY: libbpf all
 .DEFAULT: all
