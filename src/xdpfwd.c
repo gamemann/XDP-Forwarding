@@ -224,12 +224,12 @@ int main(int argc, char *argv[])
             struct forward_key fwdkey = {0};
 
             fwdkey.bindaddr = bindaddr;
-            fwdkey.bindport = cfg.rules[i].bindport;
+            fwdkey.bindport = htons(cfg.rules[i].bindport);
             fwdkey.protocol = protocol;
 
             struct forward_info fwdinfo = {0};
             fwdinfo.destaddr = destaddr;
-            fwdinfo.destport = cfg.rules[i].destport;
+            fwdinfo.destport = htons(cfg.rules[i].destport);
 
             //fprintf(stdout, "Adding forwarding rule with %" PRIu32 ":%" PRIu16 " => %" PRIu32 ":%" PRIu16 " (%" PRIu8 ")\n", fwdkey.bindaddr, fwdkey.bindport, fwdinfo.destaddr, fwdinfo.destport, fwdkey.protocol);
 
