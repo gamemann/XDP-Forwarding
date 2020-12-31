@@ -231,11 +231,11 @@ int xdp_prog_main(struct xdp_md *ctx)
 
     if (tcph)
     {
-        portkey = htons(tcph->dest);
+        portkey = tcph->dest;
     }
     else if (udph)
     {
-        portkey = htons(udph->dest);
+        portkey = udph->dest;
     }
 
     // Construct forward key.
@@ -389,11 +389,11 @@ int xdp_prog_main(struct xdp_md *ctx)
 
         if (tcph)
         {
-            portkey = htons(tcph->source);
+            portkey = tcph->source;
         }
         else if (udph)
         {
-            portkey = htons(udph->source);
+            portkey = udph->source;
         }
 
         fwdkey.bindport = portkey;
@@ -414,13 +414,13 @@ int xdp_prog_main(struct xdp_md *ctx)
 
             if (tcph)
             {
-                portkey.port = htons(tcph->dest);
+                portkey.port = tcph->dest;
 
                 conn = bpf_map_lookup_elem(&tcp_map, &portkey);
             }
             else if (udph)
             {
-                portkey.port = htons(udph->dest);
+                portkey.port = udph->dest;
 
                 conn = bpf_map_lookup_elem(&udp_map, &portkey);
             }
