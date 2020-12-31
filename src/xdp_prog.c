@@ -115,7 +115,6 @@ static __always_inline int forwardpacket4(struct forward_info *info, struct conn
             tcph->dest = conn->clientport;
         }
         
-
         // Recalculate checksum.
         tcph->check = csum_diff4(olddestaddr, iph->daddr, tcph->check);
         tcph->check = csum_diff4(oldsrcaddr, iph->saddr, tcph->check);
@@ -395,60 +394,39 @@ int xdp_prog_main(struct xdp_md *ctx)
     else
     {
         // Look for packets coming back from bind addresses.
-        fwdkey.bindaddr = iph->saddr;
-        fwdkey.protocol = iph->protocol;
-
         if (tcph)
         {
-            portkey = tcph->source;
+            portkey = tcph->dest;
         }
         else if (udph)
         {
-            portkey = udph->source;
+            portkey = udph->dest;
         }
 
-        fwdkey.bindport = portkey;
+        struct port_key pkey = {0};
+        pkey.bindaddr = iph->daddr;
+        pkey.port = portkey;
 
-        fwdinfo = bpf_map_lookup_elem(&forward_map, &fwdkey);
+        // Find out what the client IP is.
+        struct connection *conn = NULL;
 
-        if (fwdinfo)
+        if (tcph)
+        {
+            conn = bpf_map_lookup_elem(&tcp_map, &pkey);
+        }
+        else if (udph)
+        {
+            conn = bpf_map_lookup_elem(&udp_map, &pkey);
+        }
+
+        if (conn)
         {
             #ifdef DEBUG
-                bpf_printk("Found packet coming back from bind address %" PRIu32 ":%" PRIu16 " (%" PRIu8")\n", fwdkey.bindaddr, fwdkey.bindport, fwdkey.protocol);
+                bpf_printk("Found connection on %" PRIu16 ". Forwarding back to %" PRIu32":%" PRIu16 "\n", portkey.port, conn->clientaddr, conn->clientport);
             #endif
 
-            struct port_key portkey = {0};
-            portkey.bindaddr = iph->saddr;
-
-            // Find out what the client IP is.
-            struct connection *conn = NULL;
-
-            if (tcph)
-            {
-                portkey.port = tcph->dest;
-
-                conn = bpf_map_lookup_elem(&tcp_map, &portkey);
-            }
-            else if (udph)
-            {
-                portkey.port = udph->dest;
-
-                conn = bpf_map_lookup_elem(&udp_map, &portkey);
-            }
-
-            #ifdef DEBUG
-                bpf_printk("Looking for connection on %" PRIu16 "\n", portkey.port);
-            #endif
-
-            if (conn)
-            {
-                #ifdef DEBUG
-                    bpf_printk("Found connection on %" PRIu16 ". Forwarding back to %" PRIu32":%" PRIu16 "\n", portkey.port, conn->clientaddr, conn->clientport);
-                #endif
-
-                // Now forward packet back to actual client.
-                return forwardpacket4(NULL, conn, eth, iph, data, data_end);
-            }
+            // Now forward packet back to actual client.
+            return forwardpacket4(NULL, conn, eth, iph, data, data_end);
         }
     }
 
