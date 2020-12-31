@@ -281,6 +281,22 @@ int xdp_prog_main(struct xdp_md *ctx)
             conn->lastseen = now;
             conn->count++;
 
+            // We'll want to update the source port on each map with a connection. Reason we need to do this is in the case two connections from the same IP to the same bind address on different source ports come in. Not sure on a faster/more consistent way to do this to be honest.
+            conn->clientport = (tcph) ? tcph->source : (udph) ? udph->source : 0;
+
+            struct port_key tmpkey = {0};
+            tmpkey.bindaddr = iph->daddr;
+            tmpkey.port = conn->port;
+
+            if (iph->protocol == IPPROTO_TCP)
+            {
+                bpf_map_update_elem(&tcp_map, &tmpkey, conn, BPF_ANY);
+            }
+            else if (iph->protocol == IPPROTO_UDP)
+            {
+                bpf_map_update_elem(&udp_map, &tmpkey, conn, BPF_ANY);
+            }
+
             #ifdef DEBUG
                 bpf_printk("Forwarding packet from existing connection. %" PRIu32 " with count %" PRIu64 "\n", iph->saddr, conn->count);
             #endif
