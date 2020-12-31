@@ -332,7 +332,7 @@ int xdp_prog_main(struct xdp_md *ctx)
                 pkey.port = htons(porttouse);
 
                 struct connection *conntodel = bpf_map_lookup_elem(map, &pkey);
-                
+
                 if (conntodel)
                 {
                     struct conn_key oconnkey = {0};
@@ -343,7 +343,7 @@ int xdp_prog_main(struct xdp_md *ctx)
                     oconnkey.clientport = conntodel->clientport;
 
                     #ifdef DEBUG
-                        bpf_printk("Deleting connection due to port exhaust (%" PRIu32 ":%" PRIu16 ").\n", caddr, ntohs(cport));
+                        bpf_printk("Deleting connection due to port exhaust (%" PRIu32 ":%" PRIu16 ").\n", conntodel->clientaddr, ntohs(conntodel->clientport));
                     #endif
 
                     bpf_map_delete_elem(&connection_map, &oconnkey);
