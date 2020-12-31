@@ -44,5 +44,6 @@ install:
 	cp xdpfwd /usr/bin/xdpfwd
 	cp xdpfwd-add /usr/bin/xdpfwd-add
 	cp xdpfwd-del /usr/bin/xdpfwd-del
+	cp -n xdpfwd.service /etc/systemd/system/
 .PHONY: libbpf all
 .DEFAULT: all
