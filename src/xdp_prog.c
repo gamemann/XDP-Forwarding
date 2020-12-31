@@ -15,6 +15,19 @@
 
 #include "csum.h"
 
+#define DEBUG
+
+#ifdef DEBUG
+
+#define bpf_printk(fmt, ...)					\
+({								\
+	       char ____fmt[] = fmt;				\
+	       bpf_trace_printk(____fmt, sizeof(____fmt),	\
+				##__VA_ARGS__);			\
+})
+
+#endif
+
 struct bpf_map_def SEC("maps") forward_map =
 {
     .type = BPF_MAP_TYPE_HASH,
@@ -236,6 +249,10 @@ int xdp_prog_main(struct xdp_md *ctx)
 
     if (fwdinfo)
     {
+        #ifdef DEBUG
+            bpf_printk("Matched forward rule %" PRIu32 ":%" PRIu16 " (%" PRIu8 ").\n", fwdkey.bindaddr, fwdkey.bindport, fwdkey.protocol);
+        #endif
+
         uint64_t now = bpf_ktime_get_ns();
 
         // Check if we have an existing connection for this address.
@@ -253,10 +270,18 @@ int xdp_prog_main(struct xdp_md *ctx)
             // Update some things before forwarding packet.
             conn->lastseen = now;
             conn->count++;
+
+            #ifdef DEBUG
+                bpf_printk("Forwarding packet from existing connection. %" PRIu32 " with count %" PRIu64 "\n", iph->saddr, conn->count);
+            #endif
             
             // Forward the packet!
             return forwardpacket4(fwdinfo, conn, eth, iph, data, data_end);
         }
+
+        #ifdef DEBUG
+            bpf_printk("Inserting new connection for %" PRIu32 "\n", iph->saddr);
+        #endif
         
         // We don't have an existing connection, we must find one.
         struct bpf_map_def *map = NULL;
@@ -305,6 +330,10 @@ int xdp_prog_main(struct xdp_md *ctx)
                 }
             }
 
+            #ifdef DEBUG
+                bpf_printk("Decided to use port %" PRIu16 "\n", porttouse);
+            #endif
+
             if (porttouse > 0)
             {
                 // If last is higher than 0, we're replacing an existing connection. Remove that connection from map.
@@ -343,6 +372,10 @@ int xdp_prog_main(struct xdp_md *ctx)
 
                 bpf_map_update_elem(map, &npkey, &newconn, BPF_ANY);
 
+                #ifdef DEBUG
+                    bpf_printk("Forwarding packet from new connection for %" PRIu32 "\n", iph->saddr);
+                #endif
+
                 // Finally, forward packet.
                 return forwardpacket4(fwdinfo, &newconn, eth, iph, data, data_end);
             }
@@ -369,6 +402,10 @@ int xdp_prog_main(struct xdp_md *ctx)
 
         if (fwdinfo)
         {
+            #ifdef DEBUG
+                bpf_printk("Found packet coming back from bind address %" PRIu32 ":%" PRIu16 " (%" PRIu8")\n", fwdkey.bindaddr, fwdkey.bindport, fwdkey.protocol);
+            #endif
+
             struct port_key portkey = {0};
             portkey.bindaddr = iph->saddr;
 
@@ -388,8 +425,16 @@ int xdp_prog_main(struct xdp_md *ctx)
                 conn = bpf_map_lookup_elem(&udp_map, &portkey);
             }
 
+            #ifdef DEBUG
+                bpf_printk("Looking for connection on %" PRIu16 "\n", portkey.port);
+            #endif
+
             if (conn)
             {
+                #ifdef DEBUG
+                    bpf_printk("Found connection on %" PRIu16 ". Forwarding back to %" PRIu32":%" PRIu16 "\n", portkey.port, conn->clientaddr, conn->clientport);
+                #endif
+
                 // Now forward packet back to actual client.
                 return forwardpacket4(NULL, conn, eth, iph, data, data_end);
             }
