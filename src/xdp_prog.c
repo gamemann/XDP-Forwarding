@@ -239,14 +239,7 @@ int xdp_prog_main(struct xdp_md *ctx)
             break;
     }
 
-    if (tcph)
-    {
-        portkey = tcph->dest;
-    }
-    else if (udph)
-    {
-        portkey = udph->dest;
-    }
+    portkey = (tcph) ? tcph->source : (udph) ? udph->source : 0;
 
     // Construct forward key.
     struct forward_key fwdkey = {0};
@@ -295,16 +288,7 @@ int xdp_prog_main(struct xdp_md *ctx)
         #endif
         
         // We don't have an existing connection, we must find one.
-        struct bpf_map_def *map = NULL;
-
-        if (iph->protocol == IPPROTO_TCP)
-        {
-            map = &tcp_map;
-        }
-        else if (iph->protocol == IPPROTO_UDP)
-        {
-            map = &udp_map;
-        }
+        struct bpf_map_def *map = (tcph) ? &tcp_map : (udph) ? &udp_map : NULL;
 
         if (map)
         {
@@ -399,14 +383,7 @@ int xdp_prog_main(struct xdp_md *ctx)
     else
     {
         // Look for packets coming back from bind addresses.
-        if (tcph)
-        {
-            portkey = tcph->dest;
-        }
-        else if (udph)
-        {
-            portkey = udph->dest;
-        }
+        portkey = (tcph) ? tcph->source : (udph) ? udph->source : 0;
 
         struct port_key pkey = {0};
         pkey.bindaddr = iph->daddr;
