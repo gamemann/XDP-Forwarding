@@ -123,6 +123,9 @@ static __always_inline int forwardpacket4(struct forward_info *info, struct conn
         tcph->check = csum_diff4(oldsrcport, tcph->source, tcph->check);
         tcph->check = csum_diff4(olddestport, tcph->dest, tcph->check);
         
+        #ifdef DEBUG
+            bpf_printk("Forward Port => %" PRIu16 ":" PRIu16 ".\n", ntohs(tcph->source), ntohs(tcph->dest));
+        #endif
     }
     else if (iph->protocol == IPPROTO_UDP)
     {
@@ -155,10 +158,18 @@ static __always_inline int forwardpacket4(struct forward_info *info, struct conn
 
         udph->check = csum_diff4(oldsrcport, udph->source, udph->check);
         udph->check = csum_diff4(olddestport, udph->dest, udph->check);
+
+        #ifdef DEBUG
+            bpf_printk("Forward Port => %" PRIu16 ":" PRIu16 ".\n", ntohs(udph->source), ntohs(udph->dest));
+        #endif
     }
 
     // Recalculate IP checksum and send packet back out TX path.
     update_iph_checksum(iph);
+
+    #ifdef DEBUG
+        bpf_printk("Forward IP => %" PRIu32 ":" PRIu32 " (%" PRIu8")\n", iph->saddr, iph->daddr, iph->protocol);
+    #endif
 
     return XDP_TX;
 }
