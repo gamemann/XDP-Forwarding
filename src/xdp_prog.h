@@ -15,4 +15,8 @@
 #define ntohl(x) (x)
 #endif
 
+#ifndef memcpy
+# define memcpy(dest, src, n)   __builtin_memcpy((dest), (src), (n))
+#endif
+
 #define NULL ((void*)0)
