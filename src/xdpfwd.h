@@ -3,7 +3,7 @@
 #include <inttypes.h>
 
 #define MAXRULES 256
-#define MAXPORTS 50000
+#define MAXPORTS 9000
 #define MAXCONNECTIONS 1000000
 
 struct connection
@@ -42,6 +42,7 @@ struct port_key
 struct conn_key
 {
     uint32_t clientaddr;
+    uint16_t clientport;
     uint32_t bindaddr;
     uint16_t bindport;
     uint8_t protocol;
