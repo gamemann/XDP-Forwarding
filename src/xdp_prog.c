@@ -295,24 +295,17 @@ int xdp_prog_main(struct xdp_md *ctx)
             uint16_t porttouse = 0;
             uint64_t last = UINT64_MAX;
 
-            // Things to save about new connection.
-            uint32_t caddr = 0;
-            uint16_t cport = 0;
-
-            struct connection *newconn = NULL;
-
             for (uint16_t i = 1; i <= MAXPORTS; i++)
             {
                 struct port_key pkey = {0};
                 pkey.bindaddr = iph->daddr;
                 pkey.port = htons(i);
 
-                newconn = bpf_map_lookup_elem(map, &pkey);
+                struct connection *newconn = bpf_map_lookup_elem(map, &pkey);
 
                 if (!newconn)
                 {
                     porttouse = i;
-                    last = 0;
 
                     break;
                 }
@@ -327,27 +320,27 @@ int xdp_prog_main(struct xdp_md *ctx)
                 }
             }
 
-            if (newconn)
-            {
-                caddr = newconn->clientaddr;
-                cport = newconn->clientport;
-            }
-
             #ifdef DEBUG
                 bpf_printk("Decided to use port %" PRIu16 "\n", porttouse);
             #endif
 
             if (porttouse > 0)
             {
-                // Check if we had an existing connection
-                if (newconn)
+                // Check to see if we need to delete an existing connection.
+                struct port_key pkey = {0};
+                pkey.bindaddr = iph->daddr;
+                pkey.port = htons(porttouse);
+
+                struct connection *conntodel = bpf_map_lookup_elem(map, &pkey);
+                
+                if (conntodel)
                 {
                     struct conn_key oconnkey = {0};
                     oconnkey.bindaddr = iph->daddr;
                     oconnkey.bindport = portkey;
                     oconnkey.protocol = iph->protocol;
-                    oconnkey.clientaddr = caddr;
-                    oconnkey.clientport = cport;
+                    oconnkey.clientaddr = conntodel->clientaddr;
+                    oconnkey.clientport = conntodel->clientport;
 
                     #ifdef DEBUG
                         bpf_printk("Deleting connection due to port exhaust (%" PRIu32 ":%" PRIu16 ").\n", caddr, ntohs(cport));
