@@ -1,0 +1,5 @@
+interface = "ens18";
+
+forwarding = (
+
+);

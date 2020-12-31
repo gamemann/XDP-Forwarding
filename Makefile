@@ -40,6 +40,7 @@ clean:
 	rm -f xdpfwd-add
 install:
 	mkdir -p /etc/xdpfwd
+	cp -n xdpfwd.conf.example /etc/xdpfwd/xdpfwd.conf
 	cp src/xdp_prog.o /etc/xdpfwd/xdp_prog.o
 	cp xdpfwd /usr/bin/xdpfwd
 	cp xdpfwd-add /usr/bin/xdpfwd-add
