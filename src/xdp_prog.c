@@ -299,13 +299,15 @@ int xdp_prog_main(struct xdp_md *ctx)
             uint32_t caddr = 0;
             uint16_t cport = 0;
 
+            struct connection *newconn = NULL;
+
             for (uint16_t i = 1; i <= MAXPORTS; i++)
             {
                 struct port_key pkey = {0};
                 pkey.bindaddr = iph->daddr;
                 pkey.port = htons(i);
 
-                struct connection *newconn = bpf_map_lookup_elem(map, &pkey);
+                newconn = bpf_map_lookup_elem(map, &pkey);
 
                 if (!newconn)
                 {
@@ -321,10 +323,14 @@ int xdp_prog_main(struct xdp_md *ctx)
                     {
                         porttouse = i;
                         last = newconn->lastseen;
-                        caddr = newconn->clientaddr;
-                        cport = newconn->clientport;
                     }
                 }
+            }
+
+            if (newconn)
+            {
+                caddr = newconn->clientaddr;
+                cport = newconn->clientport;
             }
 
             #ifdef DEBUG
