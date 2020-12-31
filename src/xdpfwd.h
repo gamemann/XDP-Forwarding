@@ -9,6 +9,8 @@
 struct connection
 {
     uint32_t clientaddr;
+    uint16_t clientport;
+    
     uint16_t port;
     uint64_t lastseen;
 
