@@ -3,7 +3,7 @@
 #include <inttypes.h>
 
 #define MAXRULES 256
-#define MAXPORTS 9000
+#define MAXPORTS 1000
 #define MAXCONNECTIONS 1000000
 
 struct connection
