@@ -313,6 +313,7 @@ int xdp_prog_main(struct xdp_md *ctx)
 
             // Things to save about new connection.
             uint32_t caddr = 0;
+            uint16_t cport = 0;
 
             for (uint16_t i = 1; i <= MAXPORTS; i++)
             {
@@ -337,6 +338,7 @@ int xdp_prog_main(struct xdp_md *ctx)
                         porttouse = i;
                         last = newconn->lastseen;
                         caddr = newconn->clientaddr;
+                        cport = newconn->clientport;
                     }
                 }
             }
@@ -355,6 +357,7 @@ int xdp_prog_main(struct xdp_md *ctx)
                     oconnkey.bindport = portkey;
                     oconnkey.protocol = iph->protocol;
                     oconnkey.clientaddr = caddr;
+                    oconnkey.clientport = cport;
 
                     bpf_map_delete_elem(&connection_map, &oconnkey);
                 }
