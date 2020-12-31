@@ -39,6 +39,7 @@ struct conn_key
 {
     uint32_t clientaddr;
     uint32_t bindaddr;
+    uint16_t bindport;
     uint8_t protocol;
 };
 
