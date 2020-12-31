@@ -13,6 +13,8 @@
 #include "xdp_prog.h"
 #include "xdpfwd.h"
 
+#include "csum.h"
+
 struct bpf_map_def SEC("maps") forward_map =
 {
     .type = BPF_MAP_TYPE_HASH,
@@ -45,10 +47,90 @@ struct bpf_map_def SEC("maps") connection_map =
     .max_entries = MAXCONNECTIONS
 };
 
-int forward_packet(struct forward_info *info, struct ethhdr *eth, struct iphdr *iph)
+static __always_inline void swapeth(struct ethhdr *eth)
 {
+    uint8_t tmp[ETH_ALEN];
 
-    return XDP_PASS;
+    memcpy(&tmp, eth->h_source, ETH_ALEN);
+    memcpy(eth->h_source, eth->h_dest, ETH_ALEN);
+    memcpy(eth->h_dest, &tmp, ETH_ALEN);
+}
+
+static __always_inline int forwardpacket4(struct forward_info *info, struct connection *conn, struct ethhdr *eth, struct iphdr *iph, void *data, void *data_end)
+{
+    // Swap ethernet source and destination MAC addresses.
+    swapeth(eth);
+
+    // Swap IP addresses.
+    uint32_t oldsrcaddr = iph->saddr;
+    uint32_t olddestaddr = iph->daddr;
+
+    iph->saddr = iph->daddr;
+
+    if (info)
+    {
+        iph->daddr = info->destaddr;
+    }
+    else
+    {
+        iph->daddr = conn->clientaddr;
+    }
+    
+    // Handle protocol.
+    if (iph->protocol == IPPROTO_TCP)
+    {
+        struct tcphdr *tcph = data + sizeof(struct ethhdr) + (iph->ihl * 4);
+
+        // Check header.
+        if (tcph + 1 > (struct tcphdr *)data_end)
+        {
+            return XDP_DROP;
+        }
+
+        // Handle ports.
+        uint16_t oldsrcport = tcph->source;
+        uint16_t olddestport = tcph->dest;
+
+        tcph->source = conn->port;
+        tcph->dest = info->destport;
+
+        // Recalculate checksum.
+        tcph->check = csum_diff4(olddestaddr, iph->daddr, tcph->check);
+        tcph->check = csum_diff4(oldsrcaddr, iph->saddr, tcph->check);
+
+        tcph->check = csum_diff4(oldsrcport, tcph->source, tcph->check);
+        tcph->check = csum_diff4(olddestport, tcph->dest, tcph->check);
+        
+    }
+    else if (iph->protocol == IPPROTO_UDP)
+    {
+        struct udphdr *udph = data + sizeof(struct ethhdr) + (iph->ihl * 4);
+
+        // Check header.
+        if (udph + 1 > (struct udphdr *)data_end)
+        {
+            return XDP_DROP;
+        }
+
+        // Handle ports.
+        uint16_t oldsrcport = udph->source;
+        uint16_t olddestport = udph->dest;
+
+        udph->source = conn->port;
+        udph->dest = info->destport;
+
+        // Recalculate checksum.
+        udph->check = csum_diff4(olddestaddr, iph->daddr, udph->check);
+        udph->check = csum_diff4(oldsrcaddr, iph->saddr, udph->check);
+
+        udph->check = csum_diff4(oldsrcport, udph->source, udph->check);
+        udph->check = csum_diff4(olddestport, udph->dest, udph->check);
+    }
+
+    // Recalculate IP checksum and send packet back out TX path.
+    update_iph_checksum(iph);
+
+    return XDP_TX;
 }
 
 SEC("xdp_prog")
@@ -62,7 +144,7 @@ int xdp_prog_main(struct xdp_md *ctx)
     struct ethhdr *eth = data;
 
     // Check Ethernet header.
-    if (eth + 1 > (struct ethhdr *)data_end)
+    if (unlikely(eth + 1 > (struct ethhdr *)data_end))
     {
         return XDP_DROP;
     }
@@ -77,7 +159,7 @@ int xdp_prog_main(struct xdp_md *ctx)
     struct iphdr *iph = data + sizeof(struct ethhdr);
 
     // Check IP header.
-    if (iph + 1 > (struct iphdr *)data_end)
+    if (unlikely(iph + 1 > (struct iphdr *)data_end))
     {
         return XDP_DROP;
     }
@@ -137,18 +219,115 @@ int xdp_prog_main(struct xdp_md *ctx)
 
     if (fwdinfo)
     {
+        uint64_t now = bpf_ktime_get_ns();
+
         // Check if we have an existing connection for this address.
         struct conn_key connkey = {0};
 
         connkey.clientaddr = iph->saddr;
         connkey.bindaddr = iph->daddr;
+        connkey.bindport = portkey;
         connkey.protocol = iph->protocol;
 
         struct connection *conn = bpf_map_lookup_elem(&connection_map, &connkey);
 
         if (conn)
         {
+            // Update some things before forwarding packet.
+            conn->lastseen = now;
+            conn->count++;
+            
+            // Forward the packet!
+            return forwardpacket4(fwdinfo, conn, eth, iph, data, data_end);
+        }
+        
+        // We don't have an existing connection, we must find one.
+        struct bpf_map_def *map = NULL;
 
+        if (iph->protocol == IPPROTO_TCP)
+        {
+            map = &tcp_map;
+        }
+        else if (iph->protocol == IPPROTO_UDP)
+        {
+            map = &udp_map;
+        }
+
+        if (map)
+        {
+            uint16_t porttouse = 0;
+            uint64_t last = UINT64_MAX;
+
+            // Things to save about new connection.
+            uint32_t caddr = 0;
+
+            for (uint16_t i = 1; i <= MAXPORTS; i++)
+            {
+                struct port_key pkey = {0};
+                pkey.bindaddr = iph->daddr;
+                pkey.port = i;
+
+                struct connection *newconn = bpf_map_lookup_elem(map, &pkey);
+
+                if (!newconn)
+                {
+                    porttouse = i;
+                    last = 0;
+
+                    break;
+                }
+                else
+                {
+                    // We'll want to replace the most inactive connection.
+                    if (last > newconn->lastseen)
+                    {
+                        porttouse = i;
+                        last = newconn->lastseen;
+                        caddr = newconn->clientaddr;
+                    }
+                }
+            }
+
+            if (porttouse > 0)
+            {
+                // If last is higher than 0, we're replacing an existing connection. Remove that connection from map.
+                if (last > 0)
+                {
+                    struct conn_key oconnkey = {0};
+                    oconnkey.bindaddr = iph->daddr;
+                    oconnkey.bindport = portkey;
+                    oconnkey.protocol = iph->protocol;
+                    oconnkey.clientaddr = caddr;
+
+                    bpf_map_delete_elem(&connection_map, &oconnkey);
+                }
+
+                // Insert new connection.
+                struct conn_key nconnkey = {0};
+                nconnkey.bindaddr = iph->daddr;
+                nconnkey.bindport = portkey;
+                nconnkey.clientaddr = iph->saddr;
+                nconnkey.protocol = iph->protocol;
+
+                struct connection newconn = {0};
+                newconn.clientaddr = iph->saddr;
+                newconn.clientport = (tcph) ? tcph->source : (udph) ? udph->source : 0;
+                newconn.lastseen = now;
+                newconn.count = 1;
+                newconn.port = porttouse;
+
+                bpf_map_update_elem(&connection_map, &nconnkey, &newconn, BPF_ANY);
+
+                // Insert into port map.
+                struct port_key npkey = {0};
+                npkey.bindaddr = iph->daddr;
+                npkey.port = porttouse;
+
+                bpf_map_update_elem(map, &npkey, &newconn, BPF_ANY);
+
+                // Finally, forward packet.
+                return forwardpacket4(fwdinfo, &newconn, eth, iph, data, data_end);
+            }
         }
     }
     else
@@ -194,6 +373,7 @@ int xdp_prog_main(struct xdp_md *ctx)
             if (conn)
             {
                 // Now forward packet back to actual client.
+
             }
         }
     }
