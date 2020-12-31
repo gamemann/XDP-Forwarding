@@ -391,7 +391,7 @@ int xdp_prog_main(struct xdp_md *ctx)
             if (conn)
             {
                 // Now forward packet back to actual client.
-
+                return forwardpacket4(NULL, conn, eth, iph, data, data_end);
             }
         }
     }
