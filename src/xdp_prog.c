@@ -422,7 +422,7 @@ int xdp_prog_main(struct xdp_md *ctx)
         if (conn)
         {
             #ifdef DEBUG
-                bpf_printk("Found connection on %" PRIu16 ". Forwarding back to %" PRIu32":%" PRIu16 "\n", pkey.port, conn->clientaddr, conn->clientport);
+                bpf_printk("Found connection on %" PRIu16 ". Forwarding back to %" PRIu32 ":%" PRIu16 "\n", ntohs(pkey.port), conn->clientaddr, conn->clientport);
             #endif
 
             // Now forward packet back to actual client.
