@@ -239,7 +239,7 @@ int xdp_prog_main(struct xdp_md *ctx)
             break;
     }
 
-    portkey = (tcph) ? tcph->source : (udph) ? udph->source : 0;
+    portkey = (tcph) ? tcph->dest : (udph) ? udph->dest : 0;
 
     // Construct forward key.
     struct forward_key fwdkey = {0};
