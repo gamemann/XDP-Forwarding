@@ -349,6 +349,10 @@ int xdp_prog_main(struct xdp_md *ctx)
                     oconnkey.clientaddr = caddr;
                     oconnkey.clientport = cport;
 
+                    #ifdef DEBUG
+                        bpf_printk("Deleting connection due to port exhaust (%" PRIu32 ":%" PRIu16 ").\n", caddr, ntohs(cport));
+                    #endif
+
                     bpf_map_delete_elem(&connection_map, &oconnkey);
                 }
 
