@@ -303,7 +303,7 @@ int xdp_prog_main(struct xdp_md *ctx)
             {
                 struct port_key pkey = {0};
                 pkey.bindaddr = iph->daddr;
-                pkey.port = i;
+                pkey.port = htons(i);
 
                 struct connection *newconn = bpf_map_lookup_elem(map, &pkey);
 
