@@ -339,8 +339,8 @@ int xdp_prog_main(struct xdp_md *ctx)
 
             if (porttouse > 0)
             {
-                // If last is higher than 0, we're replacing an existing connection. Remove that connection from map.
-                if (last > 0)
+                // Check if we had an existing connection
+                if (newconn)
                 {
                     struct conn_key oconnkey = {0};
                     oconnkey.bindaddr = iph->daddr;
