@@ -372,14 +372,14 @@ int xdp_prog_main(struct xdp_md *ctx)
                 newconn.lastseen = now;
                 newconn.count = 1;
                 newconn.bindport = portkey;
-                newconn.port = porttouse;
+                newconn.port = htons(porttouse);
 
                 bpf_map_update_elem(&connection_map, &nconnkey, &newconn, BPF_ANY);
 
                 // Insert into port map.
                 struct port_key npkey = {0};
                 npkey.bindaddr = iph->daddr;
-                npkey.port = porttouse;
+                npkey.port = htons(porttouse);
 
                 bpf_map_update_elem(map, &npkey, &newconn, BPF_ANY);
 
