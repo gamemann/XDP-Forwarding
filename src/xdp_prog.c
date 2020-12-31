@@ -91,8 +91,17 @@ static __always_inline int forwardpacket4(struct forward_info *info, struct conn
         uint16_t oldsrcport = tcph->source;
         uint16_t olddestport = tcph->dest;
 
-        tcph->source = conn->port;
-        tcph->dest = info->destport;
+        if (info)
+        {
+            tcph->source = conn->port;
+            tcph->dest = info->destport;
+        }
+        else
+        {
+            tcph->source = conn->bindport;
+            tcph->dest = conn->clientport;
+        }
+        
 
         // Recalculate checksum.
         tcph->check = csum_diff4(olddestaddr, iph->daddr, tcph->check);
@@ -116,8 +125,16 @@ static __always_inline int forwardpacket4(struct forward_info *info, struct conn
         uint16_t oldsrcport = udph->source;
         uint16_t olddestport = udph->dest;
 
-        udph->source = conn->port;
-        udph->dest = info->destport;
+        if (info)
+        {
+            udph->source = conn->port;
+            udph->dest = info->destport;
+        }
+        else
+        {
+            udph->source = conn->bindport;
+            udph->dest = conn->clientport;
+        }
 
         // Recalculate checksum.
         udph->check = csum_diff4(olddestaddr, iph->daddr, udph->check);
@@ -314,6 +331,7 @@ int xdp_prog_main(struct xdp_md *ctx)
                 newconn.clientport = (tcph) ? tcph->source : (udph) ? udph->source : 0;
                 newconn.lastseen = now;
                 newconn.count = 1;
+                newconn.bindport = portkey;
                 newconn.port = porttouse;
 
                 bpf_map_update_elem(&connection_map, &nconnkey, &newconn, BPF_ANY);

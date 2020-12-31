@@ -3,14 +3,16 @@
 #include <inttypes.h>
 
 #define MAXRULES 256
-#define MAXPORTS 65535
+#define MAXPORTS 50000
 #define MAXCONNECTIONS 1000000
 
 struct connection
 {
     uint32_t clientaddr;
     uint16_t clientport;
-    
+
+    uint16_t bindport;
+
     uint16_t port;
     uint64_t lastseen;
 
