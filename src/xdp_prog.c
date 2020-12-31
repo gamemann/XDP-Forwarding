@@ -383,7 +383,7 @@ int xdp_prog_main(struct xdp_md *ctx)
     else
     {
         // Look for packets coming back from bind addresses.
-        portkey = (tcph) ? tcph->source : (udph) ? udph->source : 0;
+        portkey = (tcph) ? tcph->dest : (udph) ? udph->dest : 0;
 
         struct port_key pkey = {0};
         pkey.bindaddr = iph->daddr;
