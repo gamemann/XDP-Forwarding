@@ -37,12 +37,10 @@ The `xdpfwd-add` executable which is added to the `$PATH` via `/usr/bin` on inst
 -B --bport => The port to bind/look for.
 -d --daddr => The destination address.
 -D --dport => The destination port.
--p --protocol => The protocol number to use (17 for UDP, 6 for TCP, and 1 for ICMP).
+-p --protocol => The protocol (either "tcp", "udp", "icmp", or unset for all).
 ```
 
 This will add a forwarding rule while the XDP program is running. As of right now, it does **not** save this rule into the XDP config file. However, I will be implementing save functionality before release.
-
-Additionally, the protocol will accept a string input in the future (before release) such as "udp", "tcp", and "icmp". This functionality is not currently implemented, though.
 
 ### XDP Delete Program
 The `xdpfwd-del` executable which is added to the `$PATH` via `/usr/bin` on install accepts the following arguments:
@@ -50,12 +48,10 @@ The `xdpfwd-del` executable which is added to the `$PATH` via `/usr/bin` on inst
 ```
 -b --baddr => The address to bind/look for.
 -B --bport => The port to bind/look for.
--p --protocol => The protocol number to use (17 for UDP, 6 for TCP, and 1 for ICMP).
+-p --protocol => The protocol (either "tcp", "udp", "icmp", or unset for all).
 ```
 
 This will delete a forwarding rule while the XDP program is running. As of right now, it does **not** save the results into the XDP config file. However, I will be implementing save functionality before release.
-
-Additionally, the protocol will accept a string input in the future (before release) such as "udp", "tcp", and "icmp". This functionality is not currently implemented, though.
 
 ## Configuration
 The default config file is located at `/etc/xdpfwd/xdpfwd.conf` and uses the `libconfig` syntax. Here's an example config using all of its current features.
