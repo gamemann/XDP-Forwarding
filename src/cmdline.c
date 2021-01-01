@@ -75,7 +75,7 @@ void parsecmdline(int argc, char *argv[], struct cmdline *cmd)
                     break;
 
                 case 'p':
-                    cmd->protocol = (uint8_t)atoi(optarg);
+                    cmd->protocol = optarg;
 
                     break;
 
