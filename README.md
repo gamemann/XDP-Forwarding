@@ -9,9 +9,13 @@ The XDP program tries to use DRV mode at first, but if that does not attach prop
 **Note** - Before release, I plan on making benchmarks on the XDP Forwarding program vs IPTables/NFTables. As of right now, I have no benchmarks.
 
 ## Limitations
-The default maximum ports that can be used per bind address is **1000** and is set [here](https://github.com/gamemann/XDP-Forwarding/blob/master/src/xdpfwd.h#L6). You may raise this constant if you'd like along with the others there.
+The default maximum source ports that can be used per bind address is **30** and is set [here](https://github.com/gamemann/XDP-Forwarding/blob/master/src/xdpfwd.h#L6). You may raise this constant if you'd like along with the others there.
 
-At first, I was trying to use all available ports (1 - 65535). However, due to BPF verifier limitations, I had to raise some constants inside the Linux kernel and recompile the kernel. I made patches for these and have everything documented [here](https://github.com/gamemann/XDP-Forwarding/tree/master/patches). I am able to run the program with 65535 max ports per bind address without any issues with the custom kernel I built using patches I made.
+At first, I was trying to use all available ports (1 - 65535). However, due to BPF verifier limitations, I had to raise a couple constants inside the Linux kernel and recompile the kernel. I made patches for these and have everything documented [here](https://github.com/gamemann/XDP-Forwarding/tree/master/patches). I am able to run the program with 65535 max ports per bind address without any issues with the custom kernel I built using the patches I made.
+
+If you plan to use this for production, I'd highly suggest compiling your own kernel with the constants raised above. 30 maximum source ports per bind address is not much, but unfortunately, the default BPF verifier restrictions don't allow us to go any further currently.
+
+The main code that causes these limitations is located [here](https://github.com/gamemann/XDP-Forwarding/blob/master/src/xdp_prog.c#L320) and occurs when we're trying to find the best source port to use for a new connection. There's really no other way to check for the best source port available with the amount of flexibility we have to my understanding since we must loop through all source ports and check the last seen time value (BPF maps search by key).
 
 ## Requirements
 ### Packages
