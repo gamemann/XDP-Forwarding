@@ -277,6 +277,9 @@ int xdp_prog_main(struct xdp_md *ctx)
 
             #ifdef DEBUG
                 bpf_printk("Forwarding packet from existing connection. %" PRIu32 " with count %" PRIu64 "\n", iph->saddr, conn->count);
+
+                bpf_printk("VV1 = %" PRIu32 " : %" PRIu16 ".\n", connkey.clientaddr, ntohs(connkey.clientport));
+                bpf_printk("VV2 = %" PRIu32 " : %" PRIu16 " : %" PRIu8 ".\n", connkey.bindaddr, ntohs(connkey.bindport), connkey.protocol);
             #endif
             
             // Forward the packet!
@@ -373,6 +376,10 @@ int xdp_prog_main(struct xdp_md *ctx)
                 npkey.port = htons(porttouse);
 
                 bpf_map_update_elem(map, &npkey, &newconn, BPF_ANY);
+
+                #ifdef DEBUG
+                    bpf_printk("New connection: BPort => %" PRIu16 ". Port => %" PRIu16 ". BAddr => %" PRIu32 ".\n", ntohs(newconn.bindport), ntohs(npkey.port), npkey.bindaddr);
+                #endif
 
                 #ifdef DEBUG
                     bpf_printk("Forwarding packet from new connection for %" PRIu32 "\n", iph->saddr);
