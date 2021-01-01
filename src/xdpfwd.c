@@ -224,17 +224,17 @@ int main(int argc, char *argv[])
 
             if (cfg.rules[i].protocol != NULL)
             {
-                if (strcmp(lowerstr(cfg.rules[i].protocol), "tcp") == 0)
+                if (strcmp(lowerstr((char *)cfg.rules[i].protocol), "tcp") == 0)
                 {
                     protocolstr = "TCP";
                     protocol = IPPROTO_TCP;
                 }
-                else if (strcmp(lowerstr(cfg.rules[i].protocol), "udp") == 0)
+                else if (strcmp(lowerstr((char *)cfg.rules[i].protocol), "udp") == 0)
                 {
                     protocolstr = "UDP";
                     protocol = IPPROTO_UDP;
                 }
-                else if (strcmp(lowerstr(cfg.rules[i].protocol), "icmp") == 0)
+                else if (strcmp(lowerstr((char *)cfg.rules[i].protocol), "icmp") == 0)
                 {
                     protocolstr = "ICMP";
                     protocol = IPPROTO_ICMP; 
