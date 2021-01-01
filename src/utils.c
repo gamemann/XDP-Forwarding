@@ -20,11 +20,11 @@ int bpf_map_get(const char *path)
 /**
  * Simply lower-cases a string.
  * 
- * @param str Pointer to the full string we want to lower-case.
+ * @param str Pointer to the full string we want to lower-case (const char).
  * 
  * @return A character pointer to the lower-cased string.
  */
-char *lowerstr(char *str) 
+char *lowerstr(const char *str) 
 {
     for (char *p = str; *p; p++) 
     {
