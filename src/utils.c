@@ -9,3 +9,13 @@ int bpf_map_get(const char *path)
 
     return fd;
 }
+
+char *lowerstr(char *str) 
+{
+    for (char *p = str; *p; p++) 
+    {
+        *p = tolower(*p);
+    }
+
+    return str;
+}
