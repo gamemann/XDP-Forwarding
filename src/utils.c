@@ -24,7 +24,7 @@ int bpf_map_get(const char *path)
  * 
  * @return A character pointer to the lower-cased string.
  */
-char *lowerstr(const char *str) 
+char *lowerstr(char *str) 
 {
     for (char *p = str; *p; p++) 
     {
