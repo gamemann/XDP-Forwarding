@@ -245,7 +245,7 @@ int main(int argc, char *argv[])
             fwdinfo.destaddr = destaddr;
             fwdinfo.destport = htons(cfg.rules[i].destport);
 
-            fprintf(stdout, "Adding forwarding rule with %s:%" PRIu16 " => %s:%" PRIu16 " (%" PRIu8 ")\n", cfg.rules[i].bindaddr, fwdkey.bindaddr, ntohs(fwdkey.bindport), cfg.rules[i].destaddr, fwdinfo.destaddr, ntohs(fwdinfo.destport), fwdkey.protocol);
+            fprintf(stdout, "Adding forwarding rule with %s:%" PRIu16 " => %s:%" PRIu16 " (%" PRIu8 ")\n", cfg.rules[i].bindaddr, ntohs(fwdkey.bindport), cfg.rules[i].destaddr, ntohs(fwdinfo.destport), fwdkey.protocol);
 
             if (bpf_map_update_elem(forwardfd, &fwdkey, &fwdinfo, BPF_ANY) != 0)
             {
