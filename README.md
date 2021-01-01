@@ -69,7 +69,7 @@ forwarding = (
         bind = "10.50.0.3",     // The bind address which incoming packets must match.
         bindport = 80,          // The bind port which incoming packets must match.
 
-        protocol = "udp",       // The protocol (as of right now "udp", "tcp", and "icmp" are supported). Right now, you must specify a protocol. However, in the future I will be implementing functionality so you don't have to and it'll do full layer-3 forwarding.
+        protocol = "tcp",       // The protocol (as of right now "udp", "tcp", and "icmp" are supported). Right now, you must specify a protocol. However, in the future I will be implementing functionality so you don't have to and it'll do full layer-3 forwarding.
 
         dest = "10.50.0.4",     // The address we're forwarding to.
         destport = 8080         // The port we're forwarding to (if not set, will use the bind port).
