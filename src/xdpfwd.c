@@ -25,6 +25,11 @@ void signhdl(int tmp)
     cont = 0;
 }
 
+/**
+ * Raises the RLimit.
+ * 
+ * @return Returns 0 on success (EXIT_SUCCESS) or 1 on failure (EXIT_FAILURE).
+ */
 int raise_rlimit()
 {
     struct rlimit r = {RLIM_INFINITY, RLIM_INFINITY};
@@ -37,6 +42,15 @@ int raise_rlimit()
     return EXIT_SUCCESS;
 }
 
+/**
+ * Attempts to attach or detach (progfd = -1) a BPF/XDP program to an interface.
+ * 
+ * @param ifidx The index to the interface to attach to.
+ * @param progfd A file description (FD) to the BPF/XDP program.
+ * @param cmd A pointer to a cmdline struct that includes command line arguments (mostly checking for offload/HW mode set).
+ * 
+ * @return Returns the flag (int) it successfully attached the BPF/XDP program with or a negative value for error.
+ */
 int attachxdp(int ifidx, int progfd, struct cmdline *cmd)
 {
     int err;
@@ -231,7 +245,7 @@ int main(int argc, char *argv[])
             fwdinfo.destaddr = destaddr;
             fwdinfo.destport = htons(cfg.rules[i].destport);
 
-            //fprintf(stdout, "Adding forwarding rule with %" PRIu32 ":%" PRIu16 " => %" PRIu32 ":%" PRIu16 " (%" PRIu8 ")\n", fwdkey.bindaddr, fwdkey.bindport, fwdinfo.destaddr, fwdinfo.destport, fwdkey.protocol);
+            //fprintf(stdout, "Adding forwarding rule with %s (%" PRIu32 "):%" PRIu16 " => %s (%" PRIu32 "):%" PRIu16 " (%" PRIu8 ")\n", cfg.rules[i].bindaddr, fwdkey.bindaddr, ntohs(fwdkey.bindport), cfg.rules[i].destaddr, fwdinfo.destaddr, ntohs(fwdinfo.destport), fwdkey.protocol);
 
             if (bpf_map_update_elem(forwardfd, &fwdkey, &fwdinfo, BPF_ANY) != 0)
             {
