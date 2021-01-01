@@ -337,7 +337,7 @@ int xdp_prog_main(struct xdp_md *ctx)
                 {
                     struct conn_key oconnkey = {0};
                     oconnkey.bindaddr = iph->daddr;
-                    oconnkey.bindport = portkey;
+                    oconnkey.bindport = conntodel->bindport;
                     oconnkey.protocol = iph->protocol;
                     oconnkey.clientaddr = conntodel->clientaddr;
                     oconnkey.clientport = conntodel->clientport;
