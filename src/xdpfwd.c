@@ -17,6 +17,7 @@
 #include "xdpfwd.h"
 #include "config.h"
 #include "cmdline.h"
+#include "utils.h"
 
 uint8_t cont = 1;
 
@@ -223,17 +224,17 @@ int main(int argc, char *argv[])
 
             if (cfg.rules[i].protocol != NULL)
             {
-                if (strcmp(cfg.rules[i].protocol, "tcp") == 0)
+                if (strcmp(lowerstr(cfg.rules[i].protocol), "tcp") == 0)
                 {
                     protocolstr = "TCP";
                     protocol = IPPROTO_TCP;
                 }
-                else if (strcmp(cfg.rules[i].protocol, "udp") == 0)
+                else if (strcmp(lowerstr(cfg.rules[i].protocol), "udp") == 0)
                 {
                     protocolstr = "UDP";
                     protocol = IPPROTO_UDP;
                 }
-                else
+                else if (strcmp(lowerstr(cfg.rules[i].protocol), "icmp") == 0)
                 {
                     protocolstr = "ICMP";
                     protocol = IPPROTO_ICMP; 
