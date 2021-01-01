@@ -2,6 +2,8 @@
 ## Description
 A program that attaches to the [XDP](https://www.iovisor.org/technology/xdp) hook and performs basic layer 3/4 forwarding. This program does source port mapping similar to IPTables and NFTables for handling connections.
 
+The XDP program tries to use DRV mode at first, but if that does not attach properly, it will fall back to SKB mode. You may specify the `-o` flag (as seen below) to use HW mode.
+
 **WARNING** - There are still many things that need to be done to this project and as of right now, it only supports IPv4. IPv6 support will be added before official release. As of right now, the program may include bugs and forwarding features aren't yet available.
 
 **Note** - Before release, I plan on making benchmarks on the XDP Forwarding program vs IPTables/NFTables. As of right now, I have no benchmarks.
