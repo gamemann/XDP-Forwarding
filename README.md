@@ -58,7 +58,7 @@ This will delete a forwarding rule while the XDP program is running. As of right
 Additionally, the protocol will accept a string input in the future (before release) such as "udp", "tcp", and "icmp". This functionality is not currently implemented, though.
 
 ## Configuration
-The default config file is at `/etc/xdpfwd/xdpfwd.conf` and uses the `libconfig` syntax. Here's an example config using all of its current features.
+The default config file is located at `/etc/xdpfwd/xdpfwd.conf` and uses the `libconfig` syntax. Here's an example config using all of its current features.
 
 ```
 interface = "ens18"; // The interface the XDP program attaches to.
