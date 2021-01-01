@@ -219,18 +219,23 @@ int main(int argc, char *argv[])
             inet_pton(AF_INET, cfg.rules[i].destaddr, &daddr);
             destaddr = daddr.s_addr;
 
+            char *protocolstr = "ALL";
+
             if (cfg.rules[i].protocol != NULL)
             {
                 if (strcmp(cfg.rules[i].protocol, "tcp") == 0)
                 {
+                    protocolstr = "TCP";
                     protocol = IPPROTO_TCP;
                 }
                 else if (strcmp(cfg.rules[i].protocol, "udp") == 0)
                 {
+                    protocolstr = "UDP";
                     protocol = IPPROTO_UDP;
                 }
                 else
                 {
+                    protocolstr = "ICMP";
                     protocol = IPPROTO_ICMP; 
                 }
             }
@@ -245,7 +250,7 @@ int main(int argc, char *argv[])
             fwdinfo.destaddr = destaddr;
             fwdinfo.destport = htons(cfg.rules[i].destport);
 
-            fprintf(stdout, "Adding forwarding rule with %s:%" PRIu16 " => %s:%" PRIu16 " (%" PRIu8 ")\n", cfg.rules[i].bindaddr, ntohs(fwdkey.bindport), cfg.rules[i].destaddr, ntohs(fwdinfo.destport), fwdkey.protocol);
+            fprintf(stdout, "Adding forwarding rule with %s:%" PRIu16 " => %s:%" PRIu16 " (%s)\n", cfg.rules[i].bindaddr, ntohs(fwdkey.bindport), cfg.rules[i].destaddr, ntohs(fwdinfo.destport), protocolstr);
 
             if (bpf_map_update_elem(forwardfd, &fwdkey, &fwdinfo, BPF_ANY) != 0)
             {
