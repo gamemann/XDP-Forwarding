@@ -1,5 +1,6 @@
 #include <bpf.h>
 #include <libbpf.h>
+#include <ctype.h>
 
 /**
  * Retrieves the FD of a BPF map pinned to the file system.
