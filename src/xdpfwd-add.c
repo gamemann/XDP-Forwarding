@@ -44,6 +44,7 @@ int main(int argc, char *argv[])
     uint32_t bindaddr;
     uint32_t destaddr;
     uint16_t destport = cmd.dport;
+    uint8_t protocol = 0;
 
     // Retrieve 32-bit integers of bind and destination addresses in network byte order.
     struct in_addr baddr;
@@ -60,11 +61,30 @@ int main(int argc, char *argv[])
         destport = cmd.bport;
     }
 
+    char *protocolstr = "ALL";
+
+    // Check protocol.
+    if (strcmp(lowerstr(cmd.protocol), "tcp") == 0)
+    {
+        protocolstr = "TCP";
+        protocol = IPPROTO_TCP;
+    }
+    else if (strcmp(lowerstr(cmd.protocol), "udp") == 0)
+    {
+        protocolstr = "UDP";
+        protocol = IPPROTO_UDP;
+    }
+    else if (strcmp(lowerstr(cmd.protocol), "icmp") == 0)
+    {
+        protocolstr = "ICMP";
+        protocol = IPPROTO_ICMP;
+    }
+
     // Construct key and values.
     struct forward_key fwdkey = {0};
     fwdkey.bindaddr = bindaddr;
     fwdkey.bindport = htons(cmd.bport);
-    fwdkey.protocol = cmd.protocol;
+    fwdkey.protocol = protocol;
 
     struct forward_info fwdinfo = {0};
     fwdinfo.destaddr = destaddr;
@@ -77,7 +97,7 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
-    fprintf(stdout, "Added forwarding rule %s:%d => %s:%d over protocol %d\n", cmd.baddr, cmd.bport, cmd.daddr, cmd.dport, cmd.protocol);
+    fprintf(stdout, "Added forwarding rule %s:%d => %s:%d over protocol %s.\n", cmd.baddr, cmd.bport, cmd.daddr, cmd.dport, protocolstr);
 
     return EXIT_SUCCESS;
 }
