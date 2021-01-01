@@ -13,7 +13,7 @@ struct cmdline
     char *daddr;
     uint16_t dport;
 
-    uint8_t protocol;
+    char *protocol;
 
     unsigned int help : 1;
 };
