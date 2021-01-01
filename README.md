@@ -13,12 +13,23 @@ The default maximum ports that can be used per bind address is **1000** and is s
 
 At first, I was trying to use all available ports (1 - 65535). However, due to BPF verifier limitations, I had to raise some constants inside the Linux kernel and recompile the kernel. I made patches for these and have everything documented [here](https://github.com/gamemann/XDP-Forwarding/tree/master/patches). I am able to run the program with 65535 max ports per bind address without any issues with the custom kernel I built using patches I made.
 
-## Mounting The BPF File System
+## Requirements
+### Packages
+You will need `make`, `clang`, `libelf`, and `llvm` since we use these packages to build the project. Additionally, you will also need `libconfig` (`libconfig-dev` is the package on Ubuntu/Debian systems) for parsing the config file.
+
+For Ubuntu/Debian, the following should work. I'd assume package names should be similar on other Linux distros.
+
+```
+apt install build-essential make clang libelf-dev llvm libconfig-dev
+```
+
+### Mounting The BPF File System
 In order to use `xdpfwd-add` and `xdpfwd-del`, you must mount the BPF file system since the XDP program pins the BPF maps to `/sys/fs/bpf/xdpfwd`. There's a high chance this is already done for you via `iproute2` or something similar, but if it isn't, you may use the following command:
 
 ```
 mount -t bpf bpf /sys/fs/bpf/
 ```
+
 ## Command Line Usage
 ### Basic
 Basic command line usage includes:
