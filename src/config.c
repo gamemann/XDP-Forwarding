@@ -60,11 +60,11 @@ int parseconfig(const char *file, struct config *cfg)
 
     if (fwd == NULL)
     {
-        fprintf(stderr, "Cannot find \"forwarding\" rules section.\n");
+        fprintf(stderr, "Cannot find \"forwarding\" rules section. We won't be adding any forwarding rules until xdpfwd-add is used.\n");
 
         config_destroy(&conf);
 
-        return EXIT_FAILURE;
+        return EXIT_SUCCESS;
     }
 
     for (int i = 0; i < config_setting_length(fwd); i++)
