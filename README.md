@@ -21,14 +21,16 @@ The main code that causes these limitations is located [here](https://github.com
 ### Packages
 You will need `make`, `clang`, `libelf`, and `llvm` since we use these packages to build the project. Additionally, you will also need `libconfig` (`libconfig-dev` is the package on Ubuntu/Debian systems) for parsing the config file.
 
-For Ubuntu/Debian, the following should work. I'd assume package names should be similar on other Linux distros.
+For Ubuntu/Debian, the following should work.
 
 ```
 apt install build-essential make clang libelf-dev llvm libconfig-dev
 ```
 
+I'd assume package names should be similar on other Linux distros.
+
 ### Mounting The BPF File System
-In order to use `xdpfwd-add` and `xdpfwd-del`, you must mount the BPF file system since the XDP program pins the BPF maps to `/sys/fs/bpf/xdpfwd`. There's a high chance this is already done for you via `iproute2` or something similar, but if it isn't, you may use the following command:
+In order to use `xdpfwd-add` and `xdpfwd-del`, you must mount the BPF file system since the XDP program pins the BPF maps to `/sys/fs/bpf/xdpfwd`. There's a high chance this is already done for you via `iproute2` or something similar, but if it isn't, you may use the following command.
 
 ```
 mount -t bpf bpf /sys/fs/bpf/
@@ -36,7 +38,7 @@ mount -t bpf bpf /sys/fs/bpf/
 
 ## Command Line Usage
 ### Basic
-Basic command line usage includes:
+Basic command line usage includes the following.
 
 ```
 -o --offload => Attempt to load XDP program with HW/offload mode. If fails, will try DRV and SKB mode in that order.
@@ -45,7 +47,7 @@ Basic command line usage includes:
 ```
 
 ### XDP Add Program
-The `xdpfwd-add` executable which is added to the `$PATH` via `/usr/bin` on install accepts the following arguments:
+The `xdpfwd-add` executable which is added to the `$PATH` via `/usr/bin` on install accepts the following arguments.
 
 ```
 -b --baddr => The address to bind/look for.
@@ -58,7 +60,7 @@ The `xdpfwd-add` executable which is added to the `$PATH` via `/usr/bin` on inst
 This will add a forwarding rule while the XDP program is running. As of right now, it does **not** save this rule into the XDP config file. However, I will be implementing save functionality before release.
 
 ### XDP Delete Program
-The `xdpfwd-del` executable which is added to the `$PATH` via `/usr/bin` on install accepts the following arguments:
+The `xdpfwd-del` executable which is added to the `$PATH` via `/usr/bin` on install accepts the following arguments.
 
 ```
 -b --baddr => The address to bind/look for.
