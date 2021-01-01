@@ -7,6 +7,14 @@
 
 int rcount;
 
+/**
+ * Parses our config with the libconfig package.
+ * 
+ * @param file A pointer to a string (const char) indicating the file name we're parsing with libconfig.
+ * @param cfg A pointer to a config struct where we'll be storing the config information in.
+ * 
+ * @return Returns 0 on success (EXIT_SUCCESS) or 1 on failure (EXIT_FAILURE).
+ */
 int parseconfig(const char *file, struct config *cfg)
 {
     // Open file.

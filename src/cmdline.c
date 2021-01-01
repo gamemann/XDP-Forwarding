@@ -20,6 +20,15 @@ const struct option lopts[] =
     {NULL, 0, NULL, 0}
 };
 
+/**
+ * Parses the command line via getopt.
+ * 
+ * @param argc The argument count from main().
+ * @param argv A pointer to the argument array from main().
+ * @param cmd A pointer to a cmdline struct which we'll use to store the argument information in.
+ * 
+ * @return void
+ */
 void parsecmdline(int argc, char *argv[], struct cmdline *cmd)
 {
     int c = -1;

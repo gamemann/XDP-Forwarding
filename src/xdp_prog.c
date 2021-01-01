@@ -60,6 +60,13 @@ struct bpf_map_def SEC("maps") connection_map =
     .max_entries = MAXCONNECTIONS
 };
 
+/**
+ * Swaps the Ethernet source and destination MAC addresses.
+ * 
+ * @param eth A pointer to the Ethernet header (ethhdr) struct that points to the Ethernet header within the packet.
+ * 
+ * @return void
+ */
 static __always_inline void swapeth(struct ethhdr *eth)
 {
     uint8_t tmp[ETH_ALEN];
@@ -69,6 +76,18 @@ static __always_inline void swapeth(struct ethhdr *eth)
     memcpy(eth->h_dest, &tmp, ETH_ALEN);
 }
 
+/**
+ * Forwards an IPv4 packet from or back to the client.
+ * 
+ * @param info A pointer to a forward_info struct that represents what forwarding rule we're sending to. If NULL, will indicate we're sending back to the client.
+ * @param conn A pointer to a connection struct that represents the connection we're forwarding to or back to.
+ * @param eth A pointer to the Ethernet header (ethhdr) struct that points to the Ethernet header within the packet.
+ * @param iph A pointer to the IPv4 header (iphdr) struct that points to the IPv4 header within the packet.
+ * @param data A pointer to the data of the packet from the xdp_md struct.
+ * @param data_end A pointer to the data_end of the packet from the xdp_md struct.
+ * 
+ * @return XDP_TX (sends packet back out TX path).
+ */
 static __always_inline int forwardpacket4(struct forward_info *info, struct connection *conn, struct ethhdr *eth, struct iphdr *iph, void *data, void *data_end)
 {
     // Swap ethernet source and destination MAC addresses.
