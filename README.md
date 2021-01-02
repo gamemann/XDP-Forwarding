@@ -9,7 +9,7 @@ The XDP program tries to use DRV mode at first, but if that does not attach prop
 **Note** - Before release, I plan on making benchmarks on the XDP Forwarding program vs IPTables/NFTables. As of right now, I have no benchmarks.
 
 ## Limitations
-The default maximum source ports that can be used per bind address is **30** and is set [here](https://github.com/gamemann/XDP-Forwarding/blob/master/src/xdpfwd.h#L6). You may raise this constant if you'd like along with the others there.
+The default maximum source ports that can be used per bind address is **20** and is set [here](https://github.com/gamemann/XDP-Forwarding/blob/master/src/xdpfwd.h#L8). You may raise this constant if you'd like along with the others there.
 
 At first, I was trying to use all available ports (1 - 65535). However, due to BPF verifier limitations, I had to raise a couple constants inside the Linux kernel and recompile the kernel. I made patches for these and have everything documented [here](https://github.com/gamemann/XDP-Forwarding/tree/master/patches). I am able to run the program with 65535 max ports per bind address without any issues with the custom kernel I built using the patches I made.
 
