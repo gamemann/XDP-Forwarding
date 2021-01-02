@@ -56,7 +56,7 @@ struct bpf_map_def SEC("maps") connection_map =
 {
     .type = BPF_MAP_TYPE_LRU_HASH,
     .key_size = sizeof(struct conn_key),
-    .value_size = sizeof(struct connection),
+    .value_size = sizeof(uint16_t),
     .max_entries = MAXCONNECTIONS
 };
 
@@ -277,7 +277,15 @@ int xdp_prog_main(struct xdp_md *ctx)
 
         uint64_t now = bpf_ktime_get_ns();
 
-        // Check if we have an existing connection for this address.
+        // Choose which map we're using.
+        struct bpf_map_def *map = (tcph) ? &tcp_map : (udph) ? &udp_map : NULL;
+
+        if (!map)
+        {
+            return XDP_PASS;
+        }
+
+        // Check if we have an existing connection.
         struct conn_key connkey = {0};
 
         connkey.clientaddr = iph->saddr;
@@ -286,69 +294,74 @@ int xdp_prog_main(struct xdp_md *ctx)
         connkey.bindport = portkey;
         connkey.protocol = iph->protocol;
 
-        struct connection *conn = bpf_map_lookup_elem(&connection_map, &connkey);
+        uint16_t *connport = bpf_map_lookup_elem(&connection_map, &connkey);
 
-        if (conn)
+        if (connport)
         {
-            // Update some things before forwarding packet.
-            conn->lastseen = now;
-            conn->count++;
+            // Now attempt to retrieve connection from port map.
+            struct port_key pkey = {0};
+            pkey.bindaddr = iph->daddr;
+            pkey.port = *connport;
 
-            #ifdef DEBUG
-                bpf_printk("Forwarding packet from existing connection. %" PRIu32 " with count %" PRIu64 "\n", iph->saddr, conn->count);
+            struct connection *conn = bpf_map_lookup_elem(map, &pkey);
 
-                bpf_printk("VV1 = %" PRIu32 " : %" PRIu16 ".\n", connkey.clientaddr, ntohs(connkey.clientport));
-                bpf_printk("VV2 = %" PRIu32 " : %" PRIu16 " : %" PRIu8 ".\n", connkey.bindaddr, ntohs(connkey.bindport), connkey.protocol);
-            #endif
-            
-            // Forward the packet!
-            return forwardpacket4(fwdinfo, conn, eth, iph, data, data_end);
+            if (conn)
+            {
+                // Update connection stats before forwarding packet.
+                conn->lastseen = now;
+                conn->count++;
+
+                #ifdef DEBUG
+                    bpf_printk("Forwarding packet from existing connection. %" PRIu32 " with count %" PRIu64 "\n", iph->saddr, conn->count);
+
+                    bpf_printk("VV1 = %" PRIu32 " : %" PRIu16 ".\n", connkey.clientaddr, ntohs(connkey.clientport));
+                    bpf_printk("VV2 = %" PRIu32 " : %" PRIu16 " : %" PRIu8 ".\n", connkey.bindaddr, ntohs(connkey.bindport), connkey.protocol);
+                #endif
+                
+                // Forward the packet!
+                return forwardpacket4(fwdinfo, conn, eth, iph, data, data_end);
+            }
         }
 
         #ifdef DEBUG
             bpf_printk("Inserting new connection for %" PRIu32 "\n", iph->saddr);
         #endif
+
+        uint16_t porttouse = 0;
+        uint64_t last = UINT64_MAX;
         
-        // We don't have an existing connection, we must find one.
-        struct bpf_map_def *map = (tcph) ? &tcp_map : (udph) ? &udp_map : NULL;
-
-        if (map)
+        for (uint16_t i = 1; i <= MAXPORTS; i++)
         {
-            uint16_t porttouse = 0;
-            uint64_t last = UINT64_MAX;
+            struct port_key pkey = {0};
+            pkey.bindaddr = iph->daddr;
+            pkey.port = htons((uint16_t)i);
 
-            for (uint16_t i = 1; i <= MAXPORTS; i++)
+            struct connection *newconn = bpf_map_lookup_elem(map, &pkey);
+
+            if (!newconn)
             {
-                struct port_key pkey = {0};
-                pkey.bindaddr = iph->daddr;
-                pkey.port = htons(i);
+                porttouse = (uint16_t)i;
 
-                struct connection *newconn = bpf_map_lookup_elem(map, &pkey);
-
-                if (!newconn)
+                break;
+            }
+            else
+            {
+                // We'll want to replace the most inactive connection.
+                if (last > (newconn->lastseen - newconn->firstseen) / newconn->count)
                 {
-                    porttouse = i;
-
-                    break;
-                }
-                else
-                {
-                    // We'll want to replace the most inactive connection.
-                    if (last > newconn->lastseen)
-                    {
-                        porttouse = i;
-                        last = newconn->lastseen;
-                    }
+                    porttouse = (uint16_t)i;
+                    last = (newconn->lastseen - newconn->firstseen) / newconn->count;
                 }
             }
+        }
 
+        #ifdef DEBUG
+            bpf_printk("Decided to use port %" PRIu16 "\n", porttouse);
+        #endif
+
+        if (porttouse > 0)
+        {
             #ifdef DEBUG
-                bpf_printk("Decided to use port %" PRIu16 "\n", porttouse);
-            #endif
-
-            if (porttouse > 0)
-            {
-                // Check to see if we need to delete an existing connection.
                 struct port_key pkey = {0};
                 pkey.bindaddr = iph->daddr;
                 pkey.port = htons(porttouse);
@@ -356,57 +369,49 @@ int xdp_prog_main(struct xdp_md *ctx)
                 struct connection *conntodel = bpf_map_lookup_elem(map, &pkey);
 
                 if (conntodel)
-                {
-                    struct conn_key oconnkey = {0};
-                    oconnkey.bindaddr = iph->daddr;
-                    oconnkey.bindport = conntodel->bindport;
-                    oconnkey.protocol = iph->protocol;
-                    oconnkey.clientaddr = conntodel->clientaddr;
-                    oconnkey.clientport = conntodel->clientport;
-
-                    #ifdef DEBUG
-                        bpf_printk("Deleting connection due to port exhaust (%" PRIu32 ":%" PRIu16 ").\n", conntodel->clientaddr, ntohs(conntodel->clientport));
-                    #endif
-
-                    bpf_map_delete_elem(&connection_map, &oconnkey);
+                {    
+                    bpf_printk("Deleting connection due to port exhaust (%" PRIu32 ":%" PRIu16 ").\n", conntodel->clientaddr, ntohs(conntodel->clientport));
                 }
+            #endif
 
-                // Insert new connection.
-                struct conn_key nconnkey = {0};
-                nconnkey.bindaddr = iph->daddr;
-                nconnkey.bindport = portkey;
-                nconnkey.clientaddr = iph->saddr;
-                nconnkey.clientport = (tcph) ? tcph->source : (udph) ? udph->source : 0;
-                nconnkey.protocol = iph->protocol;
+            // Insert information about connections.
+            struct conn_key nconnkey = {0};
+            nconnkey.bindaddr = iph->daddr;
+            nconnkey.bindport = portkey;
+            nconnkey.clientaddr = iph->saddr;
+            nconnkey.clientport = (tcph) ? tcph->source : (udph) ? udph->source : 0;
+            nconnkey.protocol = iph->protocol;
 
-                struct connection newconn = {0};
-                newconn.clientaddr = iph->saddr;
-                newconn.clientport = (tcph) ? tcph->source : (udph) ? udph->source : 0;
-                newconn.lastseen = now;
-                newconn.count = 1;
-                newconn.bindport = portkey;
-                newconn.port = htons(porttouse);
+            uint16_t port = htons(porttouse);
 
-                bpf_map_update_elem(&connection_map, &nconnkey, &newconn, BPF_ANY);
+            bpf_map_update_elem(&connection_map, &nconnkey, &port, BPF_ANY);
 
-                // Insert into port map.
-                struct port_key npkey = {0};
-                npkey.bindaddr = iph->daddr;
-                npkey.port = htons(porttouse);
+            // Insert new connection into port map.
+            struct port_key npkey = {0};
+            npkey.bindaddr = iph->daddr;
+            npkey.port = htons(porttouse);
 
-                bpf_map_update_elem(map, &npkey, &newconn, BPF_ANY);
+            struct connection newconn = {0};
+            newconn.clientaddr = iph->saddr;
+            newconn.clientport = (tcph) ? tcph->source : (udph) ? udph->source : 0;
+            newconn.firstseen = now;
+            newconn.lastseen = now;
+            newconn.count = 1;
+            newconn.bindport = portkey;
+            newconn.port = htons(porttouse);
 
-                #ifdef DEBUG
-                    bpf_printk("New connection: BPort => %" PRIu16 ". Port => %" PRIu16 ". BAddr => %" PRIu32 ".\n", ntohs(newconn.bindport), ntohs(npkey.port), npkey.bindaddr);
-                #endif
+            bpf_map_update_elem(map, &npkey, &newconn, BPF_ANY);
 
-                #ifdef DEBUG
-                    bpf_printk("Forwarding packet from new connection for %" PRIu32 "\n", iph->saddr);
-                #endif
+            #ifdef DEBUG
+                bpf_printk("New connection: BPort => %" PRIu16 ". Port => %" PRIu16 ". BAddr => %" PRIu32 ".\n", ntohs(newconn.bindport), ntohs(npkey.port), npkey.bindaddr);
+            #endif
 
-                // Finally, forward packet.
-                return forwardpacket4(fwdinfo, &newconn, eth, iph, data, data_end);
-            }
+            #ifdef DEBUG
+                bpf_printk("Forwarding packet from new connection for %" PRIu32 "\n", iph->saddr);
+            #endif
+
+            // Finally, forward packet.
+            return forwardpacket4(fwdinfo, &newconn, eth, iph, data, data_end);
         }
     }
     else
@@ -433,7 +438,7 @@ int xdp_prog_main(struct xdp_md *ctx)
         if (conn)
         {
             #ifdef DEBUG
-                bpf_printk("Found connection on %" PRIu16 ". Forwarding back to %" PRIu32 ":%" PRIu16 "\n", ntohs(pkey.port), conn->clientaddr, conn->clientport);
+                bpf_printk("Found connection on %" PRIu16 ". Forwarding back to %" PRIu32 ":%" PRIu16 "\n", ntohs(pkey.port), conn->clientaddr, ntohs(conn->clientport));
             #endif
 
             // Now forward packet back to actual client.
