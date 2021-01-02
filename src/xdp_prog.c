@@ -334,13 +334,13 @@ int xdp_prog_main(struct xdp_md *ctx)
         {
             struct port_key pkey = {0};
             pkey.bindaddr = iph->daddr;
-            pkey.port = htons((uint16_t)i);
+            pkey.port = htons(i);
 
             struct connection *newconn = bpf_map_lookup_elem(map, &pkey);
 
             if (!newconn)
             {
-                porttouse = (uint16_t)i;
+                porttouse = i;
 
                 break;
             }
@@ -349,7 +349,7 @@ int xdp_prog_main(struct xdp_md *ctx)
                 // We'll want to replace the most inactive connection.
                 if (last > (newconn->lastseen - newconn->firstseen) / newconn->count)
                 {
-                    porttouse = (uint16_t)i;
+                    porttouse = i;
                     last = (newconn->lastseen - newconn->firstseen) / newconn->count;
                 }
             }
