@@ -541,7 +541,7 @@ int xdp_prog_main(struct xdp_md *ctx)
                 #ifdef DEBUG
                     struct port_key pkey = {0};
                     pkey.bindaddr = iph->daddr;
-                    pkey.destaddr = fwdinfo.destaddr;
+                    pkey.destaddr = fwdinfo->destaddr;
                     pkey.port = htons(porttouse);
 
                     struct connection *conntodel = bpf_map_lookup_elem(map, &pkey);
