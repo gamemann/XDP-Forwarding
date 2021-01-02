@@ -41,7 +41,7 @@ struct bpf_map_def SEC("maps") tcp_map =
     .type = BPF_MAP_TYPE_LRU_HASH,
     .key_size = sizeof(struct port_key),
     .value_size = sizeof(struct connection),
-    .max_entries = (MAXRULES * MAXPORTS)
+    .max_entries = (MAXRULES * (MAXPORT - (MINPORT - 1)))
 };
 
 struct bpf_map_def SEC("maps") udp_map =
@@ -49,7 +49,7 @@ struct bpf_map_def SEC("maps") udp_map =
     .type = BPF_MAP_TYPE_LRU_HASH,
     .key_size = sizeof(struct port_key),
     .value_size = sizeof(struct connection),
-    .max_entries = (MAXRULES * MAXPORTS)
+    .max_entries = (MAXRULES * (MAXPORT - (MINPORT - 1)))
 };
 
 struct bpf_map_def SEC("maps") connection_map =
@@ -241,7 +241,7 @@ static __always_inline int forwardpacket4(struct forward_info *info, struct conn
             // Remove four bytes from the IP header's total length.
             iph->tot_len = htons(ntohs(iph->tot_len) - sizeof(uint32_t));
             */
-           
+
             // Recalculate ICMP checksum.
         }
     }
@@ -498,7 +498,7 @@ int xdp_prog_main(struct xdp_md *ctx)
             struct port_key pkey = {0};
             pkey.bindaddr = iph->daddr;
             
-            for (uint16_t i = 1; i <= MAXPORTS; i++)
+            for (uint16_t i = MINPORT; i <= MAXPORT; i++)
             {
                 pkey.port = htons(i);
 

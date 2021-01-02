@@ -3,8 +3,11 @@
 #include <inttypes.h>
 
 #define MAXRULES 256
-#define MAXPORTS 30
 #define MAXCONNECTIONS 1000000
+
+// These represent the min and max port ranges that can be used as source ports. By default, we use 20 ports due to low BPF limitations. I am able to get this working at 1 - 65534 with a custom kernel built.
+#define MINPORT 500
+#define MAXPORT 520
 
 struct connection
 {
