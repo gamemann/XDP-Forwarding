@@ -14,6 +14,8 @@ struct connection
     uint16_t bindport;
 
     uint16_t port;
+
+    uint64_t firstseen;
     uint64_t lastseen;
 
     uint64_t count;
