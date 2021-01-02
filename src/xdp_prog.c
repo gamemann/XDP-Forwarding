@@ -15,7 +15,7 @@
 
 #include "csum.h"
 
-//#define DEBUG
+#define DEBUG
 
 #ifdef DEBUG
 
@@ -374,7 +374,7 @@ int xdp_prog_main(struct xdp_md *ctx)
                 }
             #endif
 
-            // Insert information about connections.
+            // Insert information about connection.
             struct conn_key nconnkey = {0};
             nconnkey.bindaddr = iph->daddr;
             nconnkey.bindport = portkey;
@@ -389,7 +389,7 @@ int xdp_prog_main(struct xdp_md *ctx)
             // Insert new connection into port map.
             struct port_key npkey = {0};
             npkey.bindaddr = iph->daddr;
-            npkey.port = htons(porttouse);
+            npkey.port = port;
 
             struct connection newconn = {0};
             newconn.clientaddr = iph->saddr;
@@ -398,7 +398,7 @@ int xdp_prog_main(struct xdp_md *ctx)
             newconn.lastseen = now;
             newconn.count = 1;
             newconn.bindport = portkey;
-            newconn.port = htons(porttouse);
+            newconn.port = port;
 
             bpf_map_update_elem(map, &npkey, &newconn, BPF_ANY);
 
