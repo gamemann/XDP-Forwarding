@@ -15,7 +15,7 @@ At first, I was trying to use all available ports (1 - 65535). However, due to B
 
 If you plan to use this for production, I'd highly suggest compiling your own kernel with the constants raised above. 30 maximum source ports per bind address is not much, but unfortunately, the default BPF verifier restrictions don't allow us to go any further currently.
 
-The main code that causes these limitations is located [here](https://github.com/gamemann/XDP-Forwarding/blob/master/src/xdp_prog.c#L320) and occurs when we're trying to find the best source port to use for a new connection. There's really no other way to check for the best source port available with the amount of flexibility we have to my understanding since we must loop through all source ports and check the last seen time value (BPF maps search by key).
+The main code that causes these limitations is located [here](https://github.com/gamemann/XDP-Forwarding/blob/master/src/xdp_prog.c#L333) and occurs when we're trying to find the best source port to use for a new connection. There's really no other way to check for the best source port available with the amount of flexibility we have to my understanding since we must loop through all source ports and check the last seen time value (BPF maps search by key).
 
 ## Requirements
 ### Packages
