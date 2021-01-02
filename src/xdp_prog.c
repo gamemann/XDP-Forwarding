@@ -329,11 +329,13 @@ int xdp_prog_main(struct xdp_md *ctx)
 
         uint16_t porttouse = 0;
         uint64_t last = UINT64_MAX;
+
+        // Creating the port_key struct outside of the loop and assigning bind address should save some CPU cycles.
+        struct port_key pkey = {0};
+        pkey.bindaddr = iph->daddr;
         
         for (uint16_t i = 1; i <= MAXPORTS; i++)
         {
-            struct port_key pkey = {0};
-            pkey.bindaddr = iph->daddr;
             pkey.port = htons(i);
 
             struct connection *newconn = bpf_map_lookup_elem(map, &pkey);
