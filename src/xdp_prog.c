@@ -346,11 +346,15 @@ int xdp_prog_main(struct xdp_md *ctx)
             }
             else
             {
+                // For some reason when trying to divide by any number (such as 1000000000 to get the actual PPS), the BPF verifier doesn't like that.
+                // Doesn't matter though and perhaps better we don't divide since that's one less calculation to worry about.
+                uint64_t pps = (newconn->lastseen - newconn->firstseen) / newconn->count;
+
                 // We'll want to replace the most inactive connection.
-                if (last > (newconn->lastseen - newconn->firstseen) / newconn->count)
+                if (last > pps)
                 {
                     porttouse = i;
-                    last = (newconn->lastseen - newconn->firstseen) / newconn->count;
+                    last = pps;
                 }
             }
         }
