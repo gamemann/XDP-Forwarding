@@ -275,8 +275,6 @@ int xdp_prog_main(struct xdp_md *ctx)
             bpf_printk("Matched forward rule %" PRIu32 ":%" PRIu16 " (%" PRIu8 ").\n", fwdkey.bindaddr, fwdkey.bindport, fwdkey.protocol);
         #endif
 
-        uint64_t now = bpf_ktime_get_ns();
-
         // Choose which map we're using.
         struct bpf_map_def *map = (tcph) ? &tcp_map : (udph) ? &udp_map : NULL;
 
@@ -284,6 +282,8 @@ int xdp_prog_main(struct xdp_md *ctx)
         {
             return XDP_PASS;
         }
+
+        uint64_t now = bpf_ktime_get_ns();
 
         // Check if we have an existing connection.
         struct conn_key connkey = {0};
