@@ -6,8 +6,8 @@
 #define MAXCONNECTIONS 1000000
 
 // These represent the min and max port ranges that can be used as source ports. By default, we use 20 ports due to low BPF limitations. I am able to get this working at 1 - 65534 with a custom kernel built.
-#define MINPORT 500
-#define MAXPORT 520
+#define MINPORT 1
+#define MAXPORT 60000
 
 struct connection
 {
@@ -41,6 +41,7 @@ struct forward_info
 struct port_key
 {
     uint32_t bindaddr;
+    uint32_t destaddr;
     uint16_t port;
 };
 

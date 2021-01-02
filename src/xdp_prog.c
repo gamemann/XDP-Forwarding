@@ -461,6 +461,7 @@ int xdp_prog_main(struct xdp_md *ctx)
                 // Now attempt to retrieve connection from port map.
                 struct port_key pkey = {0};
                 pkey.bindaddr = iph->daddr;
+                pkey.destaddr = fwdinfo->destaddr;
                 pkey.port = *connport;
 
                 struct connection *conn = bpf_map_lookup_elem(map, &pkey);
@@ -497,6 +498,7 @@ int xdp_prog_main(struct xdp_md *ctx)
             // Creating the port_key struct outside of the loop and assigning bind address should save some CPU cycles.
             struct port_key pkey = {0};
             pkey.bindaddr = iph->daddr;
+            pkey.destaddr = fwdinfo->destaddr;
             
             for (uint16_t i = MINPORT; i <= MAXPORT; i++)
             {
@@ -539,6 +541,7 @@ int xdp_prog_main(struct xdp_md *ctx)
                 #ifdef DEBUG
                     struct port_key pkey = {0};
                     pkey.bindaddr = iph->daddr;
+                    pkey.destaddr = fwdinfo.destaddr;
                     pkey.port = htons(porttouse);
 
                     struct connection *conntodel = bpf_map_lookup_elem(map, &pkey);
@@ -565,6 +568,7 @@ int xdp_prog_main(struct xdp_md *ctx)
             // Insert new connection into port map.
             struct port_key npkey = {0};
             npkey.bindaddr = iph->daddr;
+            npkey.destaddr = fwdinfo->destaddr;
             npkey.port = port;
 
             struct connection newconn = {0};
@@ -600,6 +604,7 @@ int xdp_prog_main(struct xdp_md *ctx)
 
         struct port_key pkey = {0};
         pkey.bindaddr = iph->daddr;
+        pkey.destaddr = iph->saddr;
         pkey.port = portkey;
 
         // Find out what the client IP is.
