@@ -81,17 +81,45 @@ static __always_inline void swapeth(struct ethhdr *eth)
  * 
  * @param info A pointer to a forward_info struct that represents what forwarding rule we're sending to. If NULL, will indicate we're sending back to the client.
  * @param conn A pointer to a connection struct that represents the connection we're forwarding to or back to.
- * @param eth A pointer to the Ethernet header (ethhdr) struct that points to the Ethernet header within the packet.
- * @param iph A pointer to the IPv4 header (iphdr) struct that points to the IPv4 header within the packet.
- * @param data A pointer to the data of the packet from the xdp_md struct.
- * @param data_end A pointer to the data_end of the packet from the xdp_md struct.
+ * @param ctx A pointer to the xdp_md struct containing all packet information.
  * 
  * @return XDP_TX (sends packet back out TX path).
  */
-static __always_inline int forwardpacket4(struct forward_info *info, struct connection *conn, struct ethhdr *eth, struct iphdr *iph, void *data, void *data_end)
+static __always_inline int forwardpacket4(struct forward_info *info, struct connection *conn, struct xdp_md *ctx)
 {
+    // Redefine packet and check headers.
+    void *data = (void *)(long)ctx->data;
+    void *data_end = (void *)(long)ctx->data_end;
+
+    struct ethhdr *eth = data;
+
+    if (eth + 1 > (struct ethhdr *)data_end)
+    {
+        return XDP_DROP;
+    }
+
+    struct iphdr *iph = data + sizeof(struct ethhdr);
+
+    if (iph + 1 > (struct iphdr *)data_end)
+    {
+        return XDP_DROP;
+    }
+
     // Swap ethernet source and destination MAC addresses.
     swapeth(eth);
+
+    // Define ICMP header, but set it to NULL.
+    struct icmphdr *icmph = NULL;
+
+    if (iph->protocol == IPPROTO_ICMP)
+    {
+        icmph = data + sizeof(struct ethhdr) + (iph->ihl * 4);
+
+        if (icmph + 1 > (struct icmphdr *)data_end)
+        {
+            return XDP_DROP;
+        }
+    }
 
     // Swap IP addresses.
     uint32_t oldsrcaddr = iph->saddr;
@@ -105,7 +133,117 @@ static __always_inline int forwardpacket4(struct forward_info *info, struct conn
     }
     else
     {
-        iph->daddr = conn->clientaddr;
+        if (!icmph)
+        {
+            iph->daddr = conn->clientaddr;
+        }
+    }
+
+    // Handle ICMP protocol.
+    if (icmph)
+    {
+        if (info)
+        {
+            // We'll want to add the client's unsigned 32-bit (4 bytes) IP address to the ICMP data so we know where to send it when it replies back.
+            // First, let's add four bytes to the packet.
+            /*
+            if (bpf_xdp_adjust_head(ctx, 0 - (int)sizeof(uint32_t)))
+            {
+                return XDP_DROP;
+            }
+
+            // We need to redefine packet and check headers again.
+            data = (void *)(long)ctx->data;
+            data_end = (void *)(long)ctx->data_end;
+
+            eth = data;
+
+            if (eth + 1 > (struct ethhdr *)data_end)
+            {
+                return XDP_DROP;
+            }
+
+            iph = data + sizeof(struct ethhdr);
+
+            if (iph + 1 > (struct iphdr *)data_end)
+            {
+                return XDP_DROP;
+            }
+
+            icmph = data + sizeof(struct ethhdr) + (iph->ihl * 4);
+
+            if (icmph + 1 > (struct icmphdr *)data_end)
+            {
+                return XDP_DROP;
+            }
+
+            // Now let's add the new data.
+            uint32_t *icmpdata = (uint32_t *)data + 2;
+
+            if (icmpdata)
+            {
+                memcpy(icmpdata, &conn->clientaddr, sizeof(uint32_t));
+            }
+
+            // We'll want to add four bytes to the IP header.
+            iph->tot_len = htons(ntohs(iph->tot_len) + sizeof(uint32_t));
+            */
+
+            // Recalculate ICMP checksum.
+        }
+        else
+        {
+            // When sending packets back, we'll want to get the client IP address from the ICMP data (last four bytes).
+            // First ensure the ICMP data is enough.
+            /*
+            if (icmph + 1 + sizeof(uint32_t) > (struct icmphdr *)data_end)
+            {
+                return XDP_PASS;
+            }
+
+            // Now access the data.
+            uint32_t *clientaddr = data_end - sizeof(uint32_t);
+
+            iph->daddr = *clientaddr;
+            
+            // Now we'll want to remove the additional four bytes we added when forwarding.
+
+            if (bpf_xdp_adjust_head(ctx, (int)sizeof(uint32_t)))
+            {
+                return XDP_DROP;
+            }
+
+            // We need to redefine packet and check headers again.
+            data = (void *)(long)ctx->data;
+            data_end = (void *)(long)ctx->data_end;
+
+            eth = data;
+
+            if (eth + 1 > (struct ethhdr *)data_end)
+            {
+                return XDP_DROP;
+            }
+
+            iph = data + sizeof(struct ethhdr);
+
+            if (iph + 1 > (struct iphdr *)data_end)
+            {
+                return XDP_DROP;
+            }
+
+            icmph = data + sizeof(struct ethhdr) + (iph->ihl * 4);
+
+            if (icmph + 1 > (struct icmphdr *)data_end)
+            {
+                return XDP_DROP;
+            }
+
+            // Remove four bytes from the IP header's total length.
+            iph->tot_len = htons(ntohs(iph->tot_len) - sizeof(uint32_t));
+            */
+           
+            // Recalculate ICMP checksum.
+        }
     }
     
     // Handle protocol.
@@ -232,6 +370,7 @@ int xdp_prog_main(struct xdp_md *ctx)
     // Get layer-4 protocol information.
     struct udphdr *udph = NULL;
     struct tcphdr *tcph = NULL;
+    struct icmphdr *icmph = NULL;
 
     uint16_t portkey = 0;
 
@@ -251,6 +390,16 @@ int xdp_prog_main(struct xdp_md *ctx)
             udph = data + sizeof(struct ethhdr) + (iph->ihl * 4);
 
             if (udph + 1 > (struct udphdr *)data_end)
+            {
+                return XDP_DROP;
+            }
+
+            break;
+
+        case IPPROTO_ICMP:
+            icmph = data + sizeof(struct ethhdr) + (iph->ihl * 4);
+
+            if (icmph + 1 > (struct icmphdr *)data_end)
             {
                 return XDP_DROP;
             }
@@ -278,12 +427,20 @@ int xdp_prog_main(struct xdp_md *ctx)
         // Choose which map we're using.
         struct bpf_map_def *map = (tcph) ? &tcp_map : (udph) ? &udp_map : NULL;
 
-        if (!map)
+        if (!map && !icmph)
         {
             return XDP_PASS;
         }
 
         uint64_t now = bpf_ktime_get_ns();
+
+        // Check for ICMP replies from destinations.
+        if (icmph && iph->saddr == fwdinfo->destaddr && icmph->type == ICMP_ECHOREPLY)
+        {
+            struct connection newconn = {0};
+            
+            forwardpacket4(NULL, &newconn, ctx);
+        }
 
         // Check if we have an existing connection.
         struct conn_key connkey = {0};
@@ -294,32 +451,36 @@ int xdp_prog_main(struct xdp_md *ctx)
         connkey.bindport = portkey;
         connkey.protocol = iph->protocol;
 
-        uint16_t *connport = bpf_map_lookup_elem(&connection_map, &connkey);
-
-        if (connport)
+        // Check for existing connection with UDP/TCP.
+        if (map)
         {
-            // Now attempt to retrieve connection from port map.
-            struct port_key pkey = {0};
-            pkey.bindaddr = iph->daddr;
-            pkey.port = *connport;
+            uint16_t *connport = bpf_map_lookup_elem(&connection_map, &connkey);
 
-            struct connection *conn = bpf_map_lookup_elem(map, &pkey);
-
-            if (conn)
+            if (connport)
             {
-                // Update connection stats before forwarding packet.
-                conn->lastseen = now;
-                conn->count++;
+                // Now attempt to retrieve connection from port map.
+                struct port_key pkey = {0};
+                pkey.bindaddr = iph->daddr;
+                pkey.port = *connport;
 
-                #ifdef DEBUG
-                    bpf_printk("Forwarding packet from existing connection. %" PRIu32 " with count %" PRIu64 "\n", iph->saddr, conn->count);
+                struct connection *conn = bpf_map_lookup_elem(map, &pkey);
 
-                    bpf_printk("VV1 = %" PRIu32 " : %" PRIu16 ".\n", connkey.clientaddr, ntohs(connkey.clientport));
-                    bpf_printk("VV2 = %" PRIu32 " : %" PRIu16 " : %" PRIu8 ".\n", connkey.bindaddr, ntohs(connkey.bindport), connkey.protocol);
-                #endif
-                
-                // Forward the packet!
-                return forwardpacket4(fwdinfo, conn, eth, iph, data, data_end);
+                if (conn)
+                {
+                    // Update connection stats before forwarding packet.
+                    conn->lastseen = now;
+                    conn->count++;
+
+                    #ifdef DEBUG
+                        bpf_printk("Forwarding packet from existing connection. %" PRIu32 " with count %" PRIu64 "\n", iph->saddr, conn->count);
+
+                        bpf_printk("VV1 = %" PRIu32 " : %" PRIu16 ".\n", connkey.clientaddr, ntohs(connkey.clientport));
+                        bpf_printk("VV2 = %" PRIu32 " : %" PRIu16 " : %" PRIu8 ".\n", connkey.bindaddr, ntohs(connkey.bindport), connkey.protocol);
+                    #endif
+                    
+                    // Forward the packet!
+                    return forwardpacket4(fwdinfo, conn, ctx);
+                }
             }
         }
 
@@ -328,35 +489,39 @@ int xdp_prog_main(struct xdp_md *ctx)
         #endif
 
         uint16_t porttouse = 0;
-        uint64_t last = UINT64_MAX;
 
-        // Creating the port_key struct outside of the loop and assigning bind address should save some CPU cycles.
-        struct port_key pkey = {0};
-        pkey.bindaddr = iph->daddr;
-        
-        for (uint16_t i = 1; i <= MAXPORTS; i++)
+        if (map)
         {
-            pkey.port = htons(i);
+            uint64_t last = UINT64_MAX;
 
-            struct connection *newconn = bpf_map_lookup_elem(map, &pkey);
-
-            if (!newconn)
+            // Creating the port_key struct outside of the loop and assigning bind address should save some CPU cycles.
+            struct port_key pkey = {0};
+            pkey.bindaddr = iph->daddr;
+            
+            for (uint16_t i = 1; i <= MAXPORTS; i++)
             {
-                porttouse = i;
+                pkey.port = htons(i);
 
-                break;
-            }
-            else
-            {
-                // For some reason when trying to divide by any number (such as 1000000000 to get the actual PPS), the BPF verifier doesn't like that.
-                // Doesn't matter though and perhaps better we don't divide since that's one less calculation to worry about.
-                uint64_t pps = (newconn->lastseen - newconn->firstseen) / newconn->count;
+                struct connection *newconn = bpf_map_lookup_elem(map, &pkey);
 
-                // We'll want to replace the most inactive connection.
-                if (last > pps)
+                if (!newconn)
                 {
                     porttouse = i;
-                    last = pps;
+
+                    break;
+                }
+                else
+                {
+                    // For some reason when trying to divide by any number (such as 1000000000 to get the actual PPS), the BPF verifier doesn't like that.
+                    // Doesn't matter though and perhaps better we don't divide since that's one less calculation to worry about.
+                    uint64_t pps = (newconn->lastseen - newconn->firstseen) / newconn->count;
+
+                    // We'll want to replace the most inactive connection.
+                    if (last > pps)
+                    {
+                        porttouse = i;
+                        last = pps;
+                    }
                 }
             }
         }
@@ -365,32 +530,37 @@ int xdp_prog_main(struct xdp_md *ctx)
             bpf_printk("Decided to use port %" PRIu16 "\n", porttouse);
         #endif
 
-        if (porttouse > 0)
+        if (porttouse > 0 || icmph)
         {
-            #ifdef DEBUG
-                struct port_key pkey = {0};
-                pkey.bindaddr = iph->daddr;
-                pkey.port = htons(porttouse);
+            uint16_t port = 0;
 
-                struct connection *conntodel = bpf_map_lookup_elem(map, &pkey);
+            if (map)
+            {
+                #ifdef DEBUG
+                    struct port_key pkey = {0};
+                    pkey.bindaddr = iph->daddr;
+                    pkey.port = htons(porttouse);
 
-                if (conntodel)
-                {    
-                    bpf_printk("Deleting connection due to port exhaust (%" PRIu32 ":%" PRIu16 ").\n", conntodel->clientaddr, ntohs(conntodel->clientport));
-                }
-            #endif
+                    struct connection *conntodel = bpf_map_lookup_elem(map, &pkey);
 
-            // Insert information about connection.
-            struct conn_key nconnkey = {0};
-            nconnkey.bindaddr = iph->daddr;
-            nconnkey.bindport = portkey;
-            nconnkey.clientaddr = iph->saddr;
-            nconnkey.clientport = (tcph) ? tcph->source : (udph) ? udph->source : 0;
-            nconnkey.protocol = iph->protocol;
+                    if (conntodel)
+                    {    
+                        bpf_printk("Deleting connection due to port exhaust (%" PRIu32 ":%" PRIu16 ").\n", conntodel->clientaddr, ntohs(conntodel->clientport));
+                    }
+                #endif
 
-            uint16_t port = htons(porttouse);
+                // Insert information about connection.
+                struct conn_key nconnkey = {0};
+                nconnkey.bindaddr = iph->daddr;
+                nconnkey.bindport = portkey;
+                nconnkey.clientaddr = iph->saddr;
+                nconnkey.clientport = connkey.clientport;
+                nconnkey.protocol = iph->protocol;
 
-            bpf_map_update_elem(&connection_map, &nconnkey, &port, BPF_ANY);
+                port = htons(porttouse);
+
+                bpf_map_update_elem(&connection_map, &nconnkey, &port, BPF_ANY);
+            }
 
             // Insert new connection into port map.
             struct port_key npkey = {0};
@@ -399,14 +569,17 @@ int xdp_prog_main(struct xdp_md *ctx)
 
             struct connection newconn = {0};
             newconn.clientaddr = iph->saddr;
-            newconn.clientport = (tcph) ? tcph->source : (udph) ? udph->source : 0;
+            newconn.clientport = connkey.clientport;
             newconn.firstseen = now;
             newconn.lastseen = now;
             newconn.count = 1;
             newconn.bindport = portkey;
             newconn.port = port;
 
-            bpf_map_update_elem(map, &npkey, &newconn, BPF_ANY);
+            if (map)
+            {
+                bpf_map_update_elem(map, &npkey, &newconn, BPF_ANY);
+            }
 
             #ifdef DEBUG
                 bpf_printk("New connection: BPort => %" PRIu16 ". Port => %" PRIu16 ". BAddr => %" PRIu32 ".\n", ntohs(newconn.bindport), ntohs(npkey.port), npkey.bindaddr);
@@ -417,7 +590,7 @@ int xdp_prog_main(struct xdp_md *ctx)
             #endif
 
             // Finally, forward packet.
-            return forwardpacket4(fwdinfo, &newconn, eth, iph, data, data_end);
+            return forwardpacket4(fwdinfo, &newconn, ctx);
         }
     }
     else
@@ -448,7 +621,7 @@ int xdp_prog_main(struct xdp_md *ctx)
             #endif
 
             // Now forward packet back to actual client.
-            return forwardpacket4(NULL, conn, eth, iph, data, data_end);
+            return forwardpacket4(NULL, conn, ctx);
         }
     }
 
