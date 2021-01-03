@@ -480,7 +480,18 @@ int xdp_prog_main(struct xdp_md *ctx)
                     #endif
                     
                     // Forward the packet!
-                    return forwardpacket4(fwdinfo, conn, ctx);
+                    if (conn->clientport == connkey.clientport)
+                    {
+                        return forwardpacket4(fwdinfo, conn, ctx);
+                    }
+                    else
+                    {
+                        bpf_map_delete_elem(map, &pkey);
+
+                        #ifdef DEBUG
+                            bpf_printk("Somehow found different client port on connection and port maps. Conn map => %" PRIu16 ". Port map => %" PRIu16 ".\n", ntohs(conn->clientport), ntohs(connkey.clientport));
+                        #endif
+                    }                    
                 }
             }
         }
