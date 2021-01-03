@@ -1,6 +1,6 @@
 # XDP Forwarding (WIP)
 ## Description
-A program that attaches to the [XDP](https://www.iovisor.org/technology/xdp) hook and performs basic layer 3/4 forwarding. This program does source port mapping similar to IPTables and NFTables for handling connections.
+A program that attaches to the [XDP](https://www.iovisor.org/technology/xdp) hook and performs basic layer 3/4 forwarding. This program does source port mapping similar to IPTables and NFTables for handling connections. Existing connections are prioritized based off of the connection's packets per nanosecond. This means on port exhaustion, connections with the least packets per nanosecond will be replaced. I feel this is best since connections with higher packets per nanosecond will be more sensitive.
 
 The XDP program tries to use DRV mode at first, but if that does not attach properly, it will fall back to SKB mode. You may specify the `-o` flag (as seen below) to use HW mode.
 
