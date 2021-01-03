@@ -56,12 +56,23 @@ int attachxdp(int ifidx, int progfd, struct cmdline *cmd)
 {
     int err;
 
+    char *smode;
+
     uint32_t flags = XDP_FLAGS_UPDATE_IF_NOEXIST;
     uint32_t mode = XDP_FLAGS_DRV_MODE;
 
+    smode = "DRV/native";
+
     if (cmd->offload)
     {
+        smode = "HW/offload";
+
         mode = XDP_FLAGS_HW_MODE;
+    }
+    else if (cmd->skb)
+    {
+        smode = "SKB/generic";
+        mode = XDP_FLAGS_SKB_MODE;
     }
 
     flags |= mode;
@@ -77,7 +88,7 @@ int attachxdp(int ifidx, int progfd, struct cmdline *cmd)
 
         if (err || progfd == -1)
         {
-            const char *smode;
+            const char *errmode;
 
             // Decrease mode.
             switch (mode)
@@ -85,14 +96,14 @@ int attachxdp(int ifidx, int progfd, struct cmdline *cmd)
                 case XDP_FLAGS_HW_MODE:
                     mode = XDP_FLAGS_DRV_MODE;
                     flags &= ~XDP_FLAGS_HW_MODE;
-                    smode = "HW/offload";
+                    errmode = "HW/offload";
 
                     break;
 
                 case XDP_FLAGS_DRV_MODE:
                     mode = XDP_FLAGS_SKB_MODE;
                     flags &= ~XDP_FLAGS_DRV_MODE;
-                    smode = "DRV";
+                    errmode = "DRV/native";
 
                     break;
 
@@ -100,23 +111,26 @@ int attachxdp(int ifidx, int progfd, struct cmdline *cmd)
                     // Exit program and set mode to -1 indicating error.
                     exit = 1;
                     mode = -err;
-                    smode = "SKB/generic";
+                    errmode = "SKB/generic";
 
                     break;
             }
 
             if (progfd != -1)
             {
-                fprintf(stderr, "Could not attach with %s mode (%s)(%d).\n", smode, strerror(-err), err);
+                fprintf(stderr, "Could not attach with %s mode (%s)(%d).\n", errmode, strerror(-err), err);
             }
             
             if (mode != -err)
             {
+                smode = (mode == XDP_FLAGS_HW_MODE) ? "HW/offload" : (mode == XDP_FLAGS_DRV_MODE) ? "DRV/native" : (mode == XDP_FLAGS_SKB_MODE) ? "SKB/generic" : "N/A";
                 flags |= mode;
             }
         }
         else
         {
+            fprintf(stdout, "Loaded XDP program in %s mode.\n", smode);
+
             break;
         }
     }
