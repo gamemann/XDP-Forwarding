@@ -434,12 +434,10 @@ int xdp_prog_main(struct xdp_md *ctx)
 
         uint64_t now = bpf_ktime_get_ns();
 
-        // Check for ICMP replies from destinations.
-        if (icmph && iph->saddr == fwdinfo->destaddr && icmph->type == ICMP_ECHOREPLY)
+        // Ensure we aren't actually receiving replies back from the destination address on the same bind and source port. Or ICMP replies.
+        if (iph->saddr == fwdinfo->destaddr)
         {
-            struct connection newconn = {0};
-            
-            forwardpacket4(NULL, &newconn, ctx);
+            goto reply;
         }
 
         // Check if we have an existing connection.
@@ -610,6 +608,7 @@ int xdp_prog_main(struct xdp_md *ctx)
     }
     else
     {
+        reply:
         // Look for packets coming back from bind addresses.
         portkey = (tcph) ? tcph->dest : (udph) ? udph->dest : 0;
 
@@ -638,6 +637,13 @@ int xdp_prog_main(struct xdp_md *ctx)
 
             // Now forward packet back to actual client.
             return forwardpacket4(NULL, conn, ctx);
+        }
+        else if (icmph && icmph->type == ICMP_ECHOREPLY)
+        {
+            // Handle ICMP replies.
+            struct connection newconn = {0};
+            
+            forwardpacket4(NULL, &newconn, ctx);
         }
     }
 
