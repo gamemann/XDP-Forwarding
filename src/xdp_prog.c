@@ -409,6 +409,9 @@ int xdp_prog_main(struct xdp_md *ctx)
 
     portkey = (tcph) ? tcph->dest : (udph) ? udph->dest : 0;
 
+    // Choose which map we're using.
+    struct bpf_map_def *map = (tcph) ? &tcp_map : (udph) ? &udp_map : NULL;
+
     // Construct forward key.
     struct forward_key fwdkey = {0};
     
@@ -423,9 +426,6 @@ int xdp_prog_main(struct xdp_md *ctx)
         #ifdef DEBUG
             bpf_printk("Matched forward rule %" PRIu32 ":%" PRIu16 " (%" PRIu8 ").\n", fwdkey.bindaddr, fwdkey.bindport, fwdkey.protocol);
         #endif
-
-        // Choose which map we're using.
-        struct bpf_map_def *map = (tcph) ? &tcp_map : (udph) ? &udp_map : NULL;
 
         if (!map && !icmph)
         {
@@ -609,11 +609,9 @@ int xdp_prog_main(struct xdp_md *ctx)
     else
     {
         reply:;
+        
         // Look for packets coming back from bind addresses.
         portkey = (tcph) ? tcph->dest : (udph) ? udph->dest : 0;
-
-        // Choose which map we're using.
-        struct bpf_map_def *map = (tcph) ? &tcp_map : (udph) ? &udp_map : NULL;
 
         if (map)
         {
