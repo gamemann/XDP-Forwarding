@@ -608,35 +608,32 @@ int xdp_prog_main(struct xdp_md *ctx)
     }
     else
     {
-        reply:
+        reply:;
         // Look for packets coming back from bind addresses.
         portkey = (tcph) ? tcph->dest : (udph) ? udph->dest : 0;
 
-        struct port_key pkey = {0};
-        pkey.bindaddr = iph->daddr;
-        pkey.destaddr = iph->saddr;
-        pkey.port = portkey;
+        // Choose which map we're using.
+        struct bpf_map_def *map = (tcph) ? &tcp_map : (udph) ? &udp_map : NULL;
 
-        // Find out what the client IP is.
-        struct connection *conn = NULL;
-
-        if (tcph)
+        if (map)
         {
-            conn = bpf_map_lookup_elem(&tcp_map, &pkey);
-        }
-        else if (udph)
-        {
-            conn = bpf_map_lookup_elem(&udp_map, &pkey);
-        }
+            struct port_key pkey = {0};
+            pkey.bindaddr = iph->daddr;
+            pkey.destaddr = iph->saddr;
+            pkey.port = portkey;
 
-        if (conn)
-        {
-            #ifdef DEBUG
-                bpf_printk("Found connection on %" PRIu16 ". Forwarding back to %" PRIu32 ":%" PRIu16 "\n", ntohs(pkey.port), conn->clientaddr, ntohs(conn->clientport));
-            #endif
+            // Find out what the client IP is.
+            struct connection *conn = bpf_map_lookup_elem(map, &pkey);
 
-            // Now forward packet back to actual client.
-            return forwardpacket4(NULL, conn, ctx);
+            if (conn)
+            {
+                #ifdef DEBUG
+                    bpf_printk("Found connection on %" PRIu16 ". Forwarding back to %" PRIu32 ":%" PRIu16 "\n", ntohs(pkey.port), conn->clientaddr, ntohs(conn->clientport));
+                #endif
+
+                // Now forward packet back to actual client.
+                return forwardpacket4(NULL, conn, ctx);
+            }
         }
         else if (icmph && icmph->type == ICMP_ECHOREPLY)
         {
