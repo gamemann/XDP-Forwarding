@@ -11,11 +11,11 @@ The XDP program tries to use DRV mode at first, but if that does not attach prop
 ## Limitations
 The default maximum source ports that can be used per bind address is **20** and is set [here](https://github.com/gamemann/XDP-Forwarding/blob/master/src/xdpfwd.h#L8) (you may adjust these if you'd like). We use port range **500** - **520** by default, but this can be configured.
 
-At first, I was trying to use all available ports (1 - 65535). However, due to BPF verifier limitations, I had to raise a couple constants inside the Linux kernel and recompile the kernel. I made patches for these and have everything documented [here](https://github.com/gamemann/XDP-Forwarding/tree/master/patches). I am able to run the program with 65534 max ports per bind address without any issues with the custom kernel I built using the patches I made. Though, keep in mind, the more source ports there are available, the more processing the XDP program will have to do when checking for available ports.
+At first, I was trying to use most available ports (1 - 65534). However, due to BPF verifier limitations, I had to raise a couple constants inside the Linux kernel and recompile the kernel. I made patches for these and have everything documented [here](https://github.com/gamemann/XDP-Forwarding/tree/master/patches). I am able to run the program with 65534 max ports per bind address without any issues with the custom kernel I built using the patches I made. Though, keep in mind, the more source ports there are available, the more processing the XDP program will have to do when checking for available ports.
 
-If you plan to use this for production, I'd highly suggest compiling your own kernel with the constants raised above. 30 maximum source ports per bind address is not much, but unfortunately, the default BPF verifier restrictions don't allow us to go any further currently.
+If you plan to use this for production, I'd highly suggest compiling your own kernel with the constants raised above. 20 maximum source ports per bind address is not much, but unfortunately, the default BPF verifier restrictions don't allow us to go any further currently.
 
-The main code that causes these limitations is located [here](https://github.com/gamemann/XDP-Forwarding/blob/master/src/xdp_prog.c#L514) and occurs when we're trying to find the best source port to use for a new connection. There's really no other way to check for the best source port available with the amount of flexibility we have to my understanding since we must loop through all source ports and check the packets per nanosecond value (BPF maps search by key).
+The main code that causes these limitations is located [here](https://github.com/gamemann/XDP-Forwarding/blob/master/src/xdp_prog.c#L512) and occurs when we're trying to find the best source port to use for a new connection. There's really no other way to check for the best source port available with the amount of flexibility we have to my understanding since we must loop through all source ports and check the packets per nanosecond value (BPF maps search by key).
 
 ## Requirements
 ### Packages
@@ -27,7 +27,7 @@ For Ubuntu/Debian, the following should work.
 apt install build-essential make clang libelf-dev llvm libconfig-dev
 ```
 
-I'd assume package names should be similar on other Linux distros.
+I'd assume package names are similar on other Linux distros.
 
 ### Mounting The BPF File System
 In order to use `xdpfwd-add` and `xdpfwd-del`, you must mount the BPF file system since the XDP program pins the BPF maps to `/sys/fs/bpf/xdpfwd`. There's a high chance this is already done for you via `iproute2` or something similar, but if it isn't, you may use the following command.
