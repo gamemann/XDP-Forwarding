@@ -214,7 +214,11 @@ int main(int argc, char *argv[])
 
     if (forwardfd < 0)
     {
-        fprintf(stderr, "WARNING - Failed retrieving 'forward_map' FD.\n");
+        fprintf(stderr, "WARNING - Failed retrieving 'forward_map' FD. This shouldn't happen.\n");
+
+        attachxdp(ifidx, -1, &cmd);
+
+        return EXIT_FAILURE;
     }
     else
     {
