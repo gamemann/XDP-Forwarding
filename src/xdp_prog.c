@@ -638,7 +638,7 @@ int xdp_prog_main(struct xdp_md *ctx)
             // Handle ICMP replies.
             struct connection newconn = {0};
             
-            forwardpacket4(NULL, &newconn, ctx);
+            return forwardpacket4(NULL, &newconn, ctx);
         }
     }
 
