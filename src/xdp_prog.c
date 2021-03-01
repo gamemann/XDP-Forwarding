@@ -179,7 +179,7 @@ static __always_inline int forwardpacket4(struct forward_info *info, struct conn
             }
 
             // Now let's add the new data.
-            unsigned int len = ntohs(iph->tot_len);
+            unsigned int len = (ctx->data_end - ctx->data);
 
             //uint32_t *icmpdata = data_end;
             uint32_t *icmpdata = data + len;
