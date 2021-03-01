@@ -262,12 +262,12 @@ int main(int argc, char *argv[])
             struct forward_key fwdkey = {0};
 
             fwdkey.bindaddr = bindaddr;
-            fwdkey.bindport = htons(cfg.rules[i].bindport);
+            fwdkey.bindport = (protocol == IPPROTO_ICMP) ? 0 : htons(cfg.rules[i].bindport);
             fwdkey.protocol = protocol;
 
             struct forward_info fwdinfo = {0};
             fwdinfo.destaddr = destaddr;
-            fwdinfo.destport = htons(cfg.rules[i].destport);
+            fwdinfo.destport = (protocol == IPPROTO_ICMP) ? 0 : htons(cfg.rules[i].destport);
 
             if (bpf_map_update_elem(forwardfd, &fwdkey, &fwdinfo, BPF_ANY) != 0)
             {
