@@ -144,11 +144,9 @@ static __always_inline int forwardpacket4(struct forward_info *info, struct conn
     {
         if (info)
         {
-            /*
-            bpf_printk("Forwarding ICMP packet.\n");
             // We'll want to add the client's unsigned 32-bit (4 bytes) IP address to the ICMP data so we know where to send it when it replies back.
             // First, let's add four bytes to the packet.
-            if (bpf_xdp_adjust_head(ctx, 0 - (int)sizeof(uint32_t)))
+            if (bpf_xdp_adjust_tail(ctx, (int)sizeof(uint32_t)))
             {
                 return XDP_DROP;
             }
@@ -179,18 +177,23 @@ static __always_inline int forwardpacket4(struct forward_info *info, struct conn
             }
 
             // Now let's add the new data.
+
+            // Unfortunately, we can't start from the packet end (data_end) pointer. Therefore, we must calculate the length of the packet and use the data pointer. Thanks for the help, Srivats! (https://lore.kernel.org/bpf/CANzUK5-g9wLiwUF88em4uVzMja_aR4xj9yzMS_ZObNKjvX6C6g@mail.gmail.com/)
             unsigned int len = (ctx->data_end - ctx->data);
 
-            //uint32_t *icmpdata = data_end;
-            uint32_t *icmpdata = data + len;
-            icmpdata -= sizeof(uint32_t);
-
-            if (icmpdata + sizeof(uint32_t) > (uint32_t *)data_end)
+            if (data + len > data_end)
             {
-                return XDP_PASS;
+                return XDP_DROP;
             }
 
-            bpf_printk("Forwarding ICMP packet V2.\n");
+            unsigned int off = (len - sizeof(uint32_t)) & 0x3fff;
+
+            uint32_t *icmpdata = data + off;
+
+            if (icmpdata + 1 > (uint32_t *)data_end)
+            {
+                return XDP_DROP;
+            }
 
             memcpy(icmpdata, &conn->clientaddr, sizeof(uint32_t));
 
@@ -198,30 +201,30 @@ static __always_inline int forwardpacket4(struct forward_info *info, struct conn
             iph->tot_len = htons(ntohs(iph->tot_len) + sizeof(uint32_t));
 
             // Recalculate ICMP checksum.
-            icmph->checksum = 0;
-            
-            uint32_t sum = 0;
-            sum = bpf_csum_diff(0, 0, (unsigned int *)icmph, sizeof(struct icmphdr), 0);
-            icmph->checksum = csum_fold_helper(sum);
-            */
+            icmph->checksum = csum_diff4(0, conn->clientaddr, icmph->checksum);
         }
         else
         {
-            /*
-            bpf_printk("Forwarding back ICMP packet.\n");
             // When sending packets back, we'll want to get the client IP address from the ICMP data (last four bytes).
             // First ensure the ICMP data is enough.
-            if (icmph + sizeof(uint32_t) + 1 > (struct icmphdr *)data_end)
+            if (icmph + sizeof(uint32_t) > (struct icmphdr *)data_end)
             {
                 return XDP_PASS;
             }
             
             // Now access the data.
-            uint32_t *clientaddr = data_end;
+            unsigned int len = (ctx->data_end - ctx->data);
 
-            clientaddr -= sizeof(uint32_t);
+            if (data + len > data_end)
+            {
+                return XDP_DROP;
+            }
 
-            if (clientaddr + sizeof(uint32_t) + 1 > (uint32_t *)data_end)
+            unsigned int off = (len - sizeof(uint32_t)) & 0x3fff;
+
+            uint32_t *clientaddr = data + off;
+
+            if (clientaddr + 1 > (uint32_t *)data_end)
             {
                 return XDP_DROP;
             }
@@ -229,8 +232,7 @@ static __always_inline int forwardpacket4(struct forward_info *info, struct conn
             iph->daddr = *clientaddr;
             
             // Now we'll want to remove the additional four bytes we added when forwarding.
-
-            if (bpf_xdp_adjust_head(ctx, (int)sizeof(uint32_t)))
+            if (bpf_xdp_adjust_tail(ctx, 0 - (int)sizeof(uint32_t)))
             {
                 return XDP_DROP;
             }
@@ -260,18 +262,11 @@ static __always_inline int forwardpacket4(struct forward_info *info, struct conn
                 return XDP_DROP;
             }
 
-            bpf_printk("Forwarding back ICMP packet V2.\n");
-
             // Remove four bytes from the IP header's total length.
             iph->tot_len = htons(ntohs(iph->tot_len) - sizeof(uint32_t));
 
             // Recalculate ICMP checksum.
-            icmph->checksum = 0;
-
-            uint32_t sum = 0;
-            sum = bpf_csum_diff(0, 0, (unsigned int *)icmph, sizeof(struct icmphdr), 0);
-            icmph->checksum = csum_fold_helper(sum);
-            */
+            icmph->checksum = csum_diff4(iph->daddr, 0, icmph->checksum);
         }
     }
     
