@@ -259,7 +259,7 @@ int main(int argc, char *argv[])
                 }
                 else
                 {
-                    fprintf(stderr, "Rule #%d has an invalid protocol. Please use TCP, UDP, or ICMP.\n");
+                    fprintf(stderr, "Rule #%d has an invalid protocol. Please use TCP, UDP, or ICMP.\n", i);
                     continue;
                 }
             }
