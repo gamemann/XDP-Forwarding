@@ -257,6 +257,11 @@ int main(int argc, char *argv[])
                     protocolstr = "ICMP";
                     protocol = IPPROTO_ICMP; 
                 }
+                else
+                {
+                    fprintf(stderr, "Rule #%d has an invalid protocol. Please use TCP, UDP, or ICMP.\n");
+                    continue;
+                }
             }
 
             struct forward_key fwdkey = {0};
