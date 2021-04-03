@@ -68,7 +68,7 @@ The `xdpfwd-del` executable which is added to the `$PATH` via `/usr/bin` on inst
 -b --baddr => The address to bind/look for.
 -B --bport => The port to bind/look for.
 -p --protocol => The protocol (either "tcp", "udp", "icmp", or unset for all).
--a --save => Save rule to config file.
+-a --save => Remove rule from config file.
 ```
 
 This will delete a forwarding rule while the XDP program is running.
