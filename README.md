@@ -56,6 +56,7 @@ The `xdpfwd-add` executable which is added to the `$PATH` via `/usr/bin` on inst
 -d --daddr => The destination address.
 -D --dport => The destination port.
 -p --protocol => The protocol (either "tcp", "udp", "icmp", or unset for all).
+-a --save => Save rule to config file.
 ```
 
 This will add a forwarding rule while the XDP program is running. As of right now, it does **not** save this rule into the XDP config file. However, I will be implementing save functionality before release.
