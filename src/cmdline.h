@@ -15,6 +15,8 @@ struct cmdline
     uint16_t dport;
 
     char *protocol;
+    
+    unsigned int save : 1;
 
     unsigned int help : 1;
 };
