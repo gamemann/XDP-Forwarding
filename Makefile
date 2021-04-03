@@ -38,6 +38,7 @@ clean:
 	rm -f src/*.o src/*.bc
 	rm -f xdpfwd
 	rm -f xdpfwd-add
+	rm -f xdpfwd-del
 install:
 	mkdir -p /etc/xdpfwd
 	cp -n xdpfwd.conf.example /etc/xdpfwd/xdpfwd.conf
