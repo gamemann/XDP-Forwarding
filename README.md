@@ -59,7 +59,7 @@ The `xdpfwd-add` executable which is added to the `$PATH` via `/usr/bin` on inst
 -a --save => Save rule to config file.
 ```
 
-This will add a forwarding rule while the XDP program is running. As of right now, it does **not** save this rule into the XDP config file. However, I will be implementing save functionality before release.
+This will add a forwarding rule while the XDP program is running.
 
 ### XDP Delete Program
 The `xdpfwd-del` executable which is added to the `$PATH` via `/usr/bin` on install accepts the following arguments.
@@ -68,9 +68,10 @@ The `xdpfwd-del` executable which is added to the `$PATH` via `/usr/bin` on inst
 -b --baddr => The address to bind/look for.
 -B --bport => The port to bind/look for.
 -p --protocol => The protocol (either "tcp", "udp", "icmp", or unset for all).
+-a --save => Save rule to config file.
 ```
 
-This will delete a forwarding rule while the XDP program is running. As of right now, it does **not** save the results into the XDP config file. However, I will be implementing save functionality before release.
+This will delete a forwarding rule while the XDP program is running.
 
 ## Configuration
 The default config file is located at `/etc/xdpfwd/xdpfwd.conf` and uses the `libconfig` syntax. Here's an example config using all of its current features.
