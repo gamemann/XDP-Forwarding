@@ -179,12 +179,15 @@ int main(int argc, char *argv[])
         }
 
         // Add and set bind port.
-        config_setting_t *s_bindport = config_setting_add(rule, "bindport", CONFIG_TYPE_INT);
-
-        if (s_bindport != NULL)
+        if (protocol != IPPROTO_ICMP)
         {
-            config_setting_set_int(s_bindport, cmd.bport);
-        }        
+            config_setting_t *s_bindport = config_setting_add(rule, "bindport", CONFIG_TYPE_INT);
+
+            if (s_bindport != NULL && protocol != IPPROTO_ICMP)
+            {
+                config_setting_set_int(s_bindport, cmd.bport);
+            }
+        }    
 
         // Add and set destination address.
         config_setting_t *s_destaddr = config_setting_add(rule, "dest", CONFIG_TYPE_STRING);
@@ -195,11 +198,14 @@ int main(int argc, char *argv[])
         }
 
         // Add and set destination port.
-        config_setting_t *s_destport = config_setting_add(rule, "destport", CONFIG_TYPE_INT);
-
-        if (s_destport != NULL)
+        if (protocol != IPPROTO_ICMP)
         {
-            config_setting_set_int(s_destport, cmd.dport);
+            config_setting_t *s_destport = config_setting_add(rule, "destport", CONFIG_TYPE_INT);
+
+            if (s_destport != NULL)
+            {
+                config_setting_set_int(s_destport, cmd.dport);
+            }
         }
 
         // Add and set protocol
