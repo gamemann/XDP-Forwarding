@@ -275,7 +275,14 @@ int main(int argc, char *argv[])
             }
             else
             {
-                fprintf(stdout, "Adding forwarding rule with %s:%" PRIu16 " => %s:%" PRIu16 " (%s).\n", cfg.rules[i].bindaddr, ntohs(fwdkey.bindport), cfg.rules[i].destaddr, ntohs(fwdinfo.destport), protocolstr);
+                if (protocol == IPPROTO_ICMP)
+                {
+                    fprintf(stdout, "Adding forwarding rule with %s => %s (%s).\n", cfg.rules[i].bindaddr, cfg.rules[i].destaddr, protocolstr);
+                }
+                else
+                {
+                    fprintf(stdout, "Adding forwarding rule with %s:%" PRIu16 " => %s:%" PRIu16 " (%s).\n", cfg.rules[i].bindaddr, ntohs(fwdkey.bindport), cfg.rules[i].destaddr, ntohs(fwdinfo.destport), protocolstr);
+                }
             }
         }
     }
