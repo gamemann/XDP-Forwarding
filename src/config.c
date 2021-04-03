@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include "config.h"
+#include "utils.h"
 
 int rcount;
 
@@ -71,6 +72,15 @@ int parseconfig(const char *file, struct config *cfg)
     {
         config_setting_t *rule = config_setting_get_elem(fwd, i);
 
+        const char *protocol = NULL;
+
+        config_setting_lookup_string(rule, "protocol", &protocol);
+
+        if (protocol != NULL)
+        {
+            cfg->rules[i].protocol = strdup(protocol);
+        }
+
         const char *bindip;
 
         if (config_setting_lookup_string(rule, "bind", &bindip) == CONFIG_FALSE)
@@ -95,9 +105,9 @@ int parseconfig(const char *file, struct config *cfg)
 
         cfg->rules[i].destaddr = strdup(destip);
         
-        int bindport;
+        int bindport = 0;
 
-        if (config_setting_lookup_int(rule, "bindport", &bindport) == CONFIG_FALSE)
+        if (strcmp(lowerstr((char *)protocol), "icmp") != 0 && config_setting_lookup_int(rule, "bindport", &bindport) == CONFIG_FALSE)
         {
             fprintf(stderr, "Could not find bind port on rule %d\n", i);
         }
@@ -106,21 +116,12 @@ int parseconfig(const char *file, struct config *cfg)
 
         int destport;
 
-        if (config_setting_lookup_int(rule, "destport", &destport) == CONFIG_FALSE)
+        if (strcmp(lowerstr((char *)protocol), "icmp") != 0 && config_setting_lookup_int(rule, "destport", &destport) == CONFIG_FALSE)
         {
             destport = bindport;
         }
 
         cfg->rules[i].destport = (uint16_t) destport;
-
-        const char *protocol = NULL;
-
-        config_setting_lookup_string(rule, "protocol", &protocol);
-
-        if (protocol != NULL)
-        {
-            cfg->rules[i].protocol = strdup(protocol);
-        }
 
         rcount++;
     }
