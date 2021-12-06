@@ -27,5 +27,5 @@ jobs:
       run: ls -la
     - name: Add execute permissions to executable file
       run: sudo chmod +x ./xdpfwd
-    - name: Run XDP FW with help menu
+    - name: Run XDP FWD with help menu
       run: sudo ./xdpfwd -h
