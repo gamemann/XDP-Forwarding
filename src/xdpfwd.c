@@ -153,6 +153,18 @@ int main(int argc, char *argv[])
 
     parsecmdline(argc, argv, &cmd);
 
+    // Check for help menu.
+    if (cmd.help)
+    {
+        fprintf(stdout, "Usage: xdpfwd [-o -s -c <config file> -h]\n" \
+                        "-o --offload => Attempt to load XDP program with HW/offload mode. If fails, will try DRV and SKB mode in that order.\n" \
+                        "-s --skb => Force program to load in SKB/generic mode.\n" \
+                        "-c --config => Location to XDP Forward config (default is /etc/xdpfwd/xdpfwd.conf).\n" \
+                        "-h --help => Print out command line usage.\n");
+
+        return EXIT_SUCCESS;
+    }
+
     char *cfgfile = "/etc/xdpfwd/xdpfwd.conf";
 
     if (cmd.cfgfile != NULL)
