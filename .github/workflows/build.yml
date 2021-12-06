@@ -1,0 +1,34 @@
+name: Build
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+  workflow_call:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: recursive
+    - name: Run apt update
+      run: sudo apt update
+    - name: Install LibELF
+      run: sudo apt install -y libelf-dev
+    - name: Install LibConfig
+      run: sudo apt install -y libconfig-dev 
+    - name: Install LLVM
+      run: sudo apt install -y llvm
+    - name: Make project
+      run: make
+    - name: Install project
+      run: sudo make install
+    - name: Store build artifacts
+      uses: actions/upload-artifact@master
+      with:
+        name: build-output
+        path: build/xdpfwd
