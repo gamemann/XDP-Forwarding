@@ -1,0 +1,31 @@
+name: Run
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  reuse_build:
+    uses: gamemann/XDP-Forwarding/.github/workflows/build.yml@master
+  run:
+    needs: reuse_build
+    runs-on: ubuntu-latest
+    steps:
+    - name: Download artifact from Build workflow
+      uses: actions/download-artifact@master
+      with:
+        name: build-output
+    - name: Run apt update
+      run: sudo apt update
+    - name: Install LibConfig
+      run: sudo apt install libconfig-dev
+    - name: Install LibELF
+      run: sudo apt install libelf-dev
+    - name: List files
+      run: ls -la
+    - name: Add execute permissions to executable file
+      run: sudo chmod +x ./xdpfwd
+    - name: Run XDP FW with help menu
+      run: sudo ./xdpfwd -h
