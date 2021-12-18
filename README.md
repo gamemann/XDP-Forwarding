@@ -45,6 +45,7 @@ Basic command line usage includes the following.
 ```
 -o --offload => Attempt to load XDP program with HW/offload mode. If fails, will try DRV and SKB mode in that order.
 -s --skb => Force program to load in SKB/generic mode.
+-t --time => The amount of time in seconds to run the program for. Unset or 0 = infinite.
 -c --config => Location to XDP Forward config (default is /etc/xdpfwd/xdpfwd.conf).
 -h --help => Print out command line usage.
 ```

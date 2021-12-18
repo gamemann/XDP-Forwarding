@@ -7,6 +7,7 @@
 #include <inttypes.h>
 #include <signal.h>
 #include <unistd.h>
+#include <time.h>
 
 #include <bpf.h>
 #include <libbpf.h>
@@ -159,6 +160,7 @@ int main(int argc, char *argv[])
         fprintf(stdout, "Usage: xdpfwd [-o -s -c <config file> -h]\n" \
                         "-o --offload => Attempt to load XDP program with HW/offload mode. If fails, will try DRV and SKB mode in that order.\n" \
                         "-s --skb => Force program to load in SKB/generic mode.\n" \
+                        "-t --time => The amount of time in seconds to run the program for. Unset or 0 = infinite.\n" \
                         "-c --config => Location to XDP Forward config (default is /etc/xdpfwd/xdpfwd.conf).\n" \
                         "-h --help => Print out command line usage.\n");
 
@@ -304,8 +306,18 @@ int main(int argc, char *argv[])
         }
     }
 
+    time_t endTime = (cmd.time > 0) ? time(NULL) + cmd.time : 0;
+
     while (cont)
     {
+        // Check if we need to end or not.
+        time_t curTime = time(NULL);
+
+        if (endTime > 0 && curTime >= endTime)
+        {
+            break;
+        }
+
         sleep(1);
     }
 

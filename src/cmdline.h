@@ -7,6 +7,7 @@ struct cmdline
     char *cfgfile;
     unsigned int offload : 1;
     unsigned int skb : 1;
+    unsigned int time;
 
     char *baddr;
     uint16_t bport;

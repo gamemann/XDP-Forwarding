@@ -10,6 +10,7 @@ const struct option lopts[] =
     {"config", required_argument, NULL, 'c'},
     {"offload", no_argument, NULL, 'o'},
     {"skb", no_argument, NULL, 's'},
+    {"time", required_argument, NULL, 't'},
 
     {"baddr", required_argument, NULL, 'b'},
     {"bport", required_argument, NULL, 'B'},
@@ -37,7 +38,7 @@ void parsecmdline(int argc, char *argv[], struct cmdline *cmd)
 
     while (optind < argc)
     {
-        if ((c = getopt_long(argc, argv, "c:osb:B:d:D:p:ah", lopts, NULL)) != -1)
+        if ((c = getopt_long(argc, argv, "c:ost:b:B:d:D:p:ah", lopts, NULL)) != -1)
         {
             switch (c)
             {
@@ -53,6 +54,11 @@ void parsecmdline(int argc, char *argv[], struct cmdline *cmd)
 
                 case 's':
                     cmd->skb = 1;
+
+                    break;
+
+                case 't':
+                    cmd->time = atoi(optarg);
 
                     break;
 
