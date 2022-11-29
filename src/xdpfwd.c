@@ -162,6 +162,7 @@ int main(int argc, char *argv[])
                         "-s --skb => Force program to load in SKB/generic mode.\n" \
                         "-t --time => The amount of time in seconds to run the program for. Unset or 0 = infinite.\n" \
                         "-c --config => Location to XDP Forward config (default is /etc/xdpfwd/xdpfwd.conf).\n" \
+                        "-l --list => List all forwarding rules." \
                         "-h --help => Print out command line usage.\n");
 
         return EXIT_SUCCESS;
@@ -182,6 +183,52 @@ int main(int argc, char *argv[])
         fprintf(stderr, "Error reading config file :: %s.\n", strerror(errno));
 
         return EXIT_FAILURE;
+    }
+
+    // Check for list.
+    if (cmd.list)
+    {
+        fprintf(stdout, "Forwarding Rules\n");
+
+        // List all rules (loop through 256 times).
+        for (unsigned int i = 0; i < MAXRULES; i++)
+        {
+            // Make sure the rule isn't null.
+            if (cfg.rules[i].bindaddr == NULL || cfg.rules[i].destaddr == NULL || cfg.rules[i].protocol == NULL)
+            {
+                continue;
+            }
+
+            struct forward_rule *rule = &cfg.rules[i];
+
+            if (rule == NULL)
+            {
+                continue;
+            }
+
+            char *protocol = (char *)rule->protocol;
+
+            // If protocol string is empty, set to all!
+            if (protocol[0] == '\0')
+            {
+                protocol = "All";
+            }
+            
+            fprintf(stdout, "Rule #%i\n", i);
+
+            fprintf(stdout, "\tProtocol => %s\n\n", protocol);
+
+            fprintf(stdout, "\tBind Address => %s\n", rule->bindaddr);
+            fprintf(stdout, "\tBind Port => %u\n\n", rule->bindport);
+
+
+            fprintf(stdout, "\tDest Address => %s\n", rule->destaddr);
+            fprintf(stdout, "\tDest Port => %u\n\n", rule->destport);
+        }
+
+        fprintf(stdout, "\n");
+
+        return EXIT_SUCCESS;
     }
 
     // Retrieve interface index.

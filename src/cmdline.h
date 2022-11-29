@@ -19,6 +19,7 @@ struct cmdline
     
     unsigned int save : 1;
 
+    unsigned int list : 1;
     unsigned int help : 1;
 };
 
