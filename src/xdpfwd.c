@@ -214,13 +214,12 @@ int main(int argc, char *argv[])
                 protocol = "All";
             }
             
-            fprintf(stdout, "Rule #%i\n", i);
+            fprintf(stdout, "Rule #%i\n", (i + 1));
 
             fprintf(stdout, "\tProtocol => %s\n\n", protocol);
 
             fprintf(stdout, "\tBind Address => %s\n", rule->bindaddr);
             fprintf(stdout, "\tBind Port => %u\n\n", rule->bindport);
-
 
             fprintf(stdout, "\tDest Address => %s\n", rule->destaddr);
             fprintf(stdout, "\tDest Port => %u\n\n", rule->destport);
