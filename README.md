@@ -109,5 +109,22 @@ forwarding = (
 );
 ```
 
+## Building & Installing
+Assuming you've downloaded all the required packages, building this project should be straight forward. You may use the following shell and Bash commands!
+
+```bash
+# Clone respository and its sub-modules such as LibBPF.
+git clone --recursive https://github.com/gamemann/XDP-Forwarding
+
+# Change directory.
+cd XDP-Forwarding
+
+# Make project using all cores.
+make -j $(nproc)
+
+# Install binaries to PATH as root so you may use 'xdpfwd', 'xdpfwd-add', 'xdpfwd-del'.
+sudo make install
+```
+
 ## Credits
 * [Christian Deacon](https://github.com/gamemann)
