@@ -37,7 +37,7 @@ int main(int argc, char *argv[])
 
     if (cmd.daddr == NULL)
     {
-        fprintf(stderr, "Missing destination address. Please specify bind address with -b <addr>.\n");
+        fprintf(stderr, "Missing destination address. Please specify destination address with -d <addr>.\n");
 
         return EXIT_FAILURE;
     }
