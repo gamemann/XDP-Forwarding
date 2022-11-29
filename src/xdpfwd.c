@@ -193,15 +193,15 @@ int main(int argc, char *argv[])
         // List all rules (loop through 256 times).
         for (unsigned int i = 0; i < MAXRULES; i++)
         {
-            // Make sure the rule isn't null.
-            if (cfg.rules[i].bindaddr == NULL || cfg.rules[i].destaddr == NULL || cfg.rules[i].protocol == NULL)
+            struct forward_rule *rule = &cfg.rules[i];
+
+            if (rule == NULL)
             {
                 continue;
             }
 
-            struct forward_rule *rule = &cfg.rules[i];
-
-            if (rule == NULL)
+            // Make sure the rule isn't null.
+            if (rule == NULL || rule->bindaddr == NULL || rule->destaddr == NULL || rule->protocol == NULL)
             {
                 continue;
             }
