@@ -46,17 +46,17 @@ int main(int argc, char *argv[])
     char *protocolstr = "ALL";
 
     // Check protocol.
-    if (strcmp(lowerstr(cmd.protocol), "tcp") == 0)
+    if (cmd.protocol != NULL && strcmp(lowerstr(cmd.protocol), "tcp") == 0)
     {
         protocolstr = "TCP";
         protocol = IPPROTO_TCP;
     }
-    else if (strcmp(lowerstr(cmd.protocol), "udp") == 0)
+    else if (cmd.protocol != NULL && strcmp(lowerstr(cmd.protocol), "udp") == 0)
     {
         protocolstr = "UDP";
         protocol = IPPROTO_UDP;
     }
-    else if (strcmp(lowerstr(cmd.protocol), "icmp") == 0)
+    else if (cmd.protocol != NULL && strcmp(lowerstr(cmd.protocol), "icmp") == 0)
     {
         protocolstr = "ICMP";
         protocol = IPPROTO_ICMP;
