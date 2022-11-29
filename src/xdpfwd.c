@@ -195,11 +195,6 @@ int main(int argc, char *argv[])
         {
             struct forward_rule *rule = &cfg.rules[i];
 
-            if (rule == NULL)
-            {
-                continue;
-            }
-
             // Make sure the rule isn't null.
             if (rule == NULL || rule->bindaddr == NULL || rule->destaddr == NULL || rule->protocol == NULL)
             {
