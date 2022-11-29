@@ -52,14 +52,14 @@ xdp_prog: mk_build
 	$(CC) -I$(LIBBPF_SRC) -D__BPF__ -Wall -Wextra $(GLOBAL_FLAGS) -emit-llvm -c -o $(BUILD_DIR)/$(XDP_PROG_LL) $(SRC_DIR)/$(XDP_PROG_SRC) 
 	$(LLC) -march=bpf -filetype=obj -o $(BUILD_DIR)/$(XDP_PROG_OUT) $(BUILD_DIR)/$(XDP_PROG_LL)
 libbpf:
-	$(MAKE) -C $(LIBBPF_SRC)
+	$(MAKE) -j $(nproc) -C $(LIBBPF_SRC)
 common: mk_build
 	$(CC) $(GLOBAL_FLAGS) -c -o $(BUILD_DIR)/$(CMD_LINE_OUT) $(SRC_DIR)/$(CMD_LINE_SRC)
 	$(CC) $(GLOBAL_FLAGS) -c -o $(BUILD_DIR)/$(CONFIG_OUT) $(SRC_DIR)/$(CONFIG_SRC)
 utils: libbpf mk_build
 	$(CC) -I$(LIBBPF_SRC) $(GLOBAL_FLAGS) -c -o $(BUILD_DIR)/$(UTILS_OUT) $(SRC_DIR)/$(UTILS_SRC)
 clean:
-	$(MAKE) -C $(LIBBPF_SRC) clean
+	$(MAKE) -j $(nproc) -C $(LIBBPF_SRC) clean
 	rm -f $(BUILD_DIR)/*.o $(BUILD_DIR)/*.ll
 	rm -f $(BUILD_DIR)/$(LOADER_OUT)
 	rm -f $(BUILD_DIR)/$(ADD_OUT)
